@@ -1,13 +1,9 @@
-# import os
-# from pydantic import BaseModel
-# from random import randint
 from datetime import date, timedelta
 from tortoise import fields
 from tortoise.models import Model
 
 # from nonebot.log import logger
 from src.utils import download_image
-# from config import BASE, MAX_LUCKY, MULTIPLIER, cache_directory
 
 
 class UserTable(Model):
@@ -29,14 +25,14 @@ class UserTable(Model):
     gold = fields.IntField(default=0)
     # 累计登录次数
     sign_count = fields.IntField(default=0)
-   
+
     # 连续登录天数
     days_count = fields.IntField(default=0)
     # 背景图地址
     bg_img = fields.CharField(max_length=255, default="")
     # 登录时间
     sign_at = fields.IntField(default=0)
-     # 最后登录时间
+    # 最后登录时间
     last_sign = fields.DateField(default=date(2000, 1, 1))
 
     class Meta:

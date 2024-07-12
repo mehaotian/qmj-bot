@@ -30,6 +30,8 @@ async def to_say_handle(bot: Bot, event: GroupAtMessageCreateEvent):
     #     )
     # )
     # sender = event.sender
-    print(event.get_event_description())
+    print(event.get_user_id())
+    print(event.get_session_id())
+    print(event.group_openid)
 
     await bot.send(event=event, message=Message('test'))

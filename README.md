@@ -55,3 +55,19 @@ scope: commit 影响的范围, 比如: route, component, utils, build...
 subject: commit 的概述, 建议符合 50/72 formatting
 body: commit 具体修改内容, 可以分为多行, 建议符合 50/72 formatting
 footer: 一些备注, 通常是 BREAKING CHANGE 或修复的 bug 的链接.
+
+
+## 官q 获取头像
+
+```shell
+https://q.qlogo.cn/qqapp/102129847/E8389770B361F150D5215922C8728751/0
+
+type = 0: 原图
+type = 1: 略缩图 40*40
+type = 2: 略缩图 40*40
+type = 3 100*100 
+
+
+https://q.qlogo.cn/qqapp/{bot_id}/{user_id}/{type}
+
+```

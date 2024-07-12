@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.10 (qq-miaoji-bot)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.10 (qq-miaoji-bot)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="qmj-bot" project-jdk-type="Python SDK" />
 </project>
