@@ -1,4 +1,4 @@
 import bot
 import nonebot
 
-# app = nonebot.get_asgi()
+app = nonebot.get_asgi()
