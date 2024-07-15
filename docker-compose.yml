@@ -1,0 +1,19 @@
+version: "3"
+x-config-host: &config-host ${HOST:-0.0.0.0}
+x-config-port: &config-port ${PORT:-8080}
+services:
+  nonebot:
+    image: mehaotian/qmj-bot:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - /home/ht/miaoji-bot/app:/app
+      - /home/ht/miaoji-bot/cache_image:/cache_image
+      - ./.env.prod:/app/.env.prod
+    environment:
+      ENVIRONMENT: prod
+      HOST: *config-host
+      PORT: *config-port
+      LANG: zh_CN.UTF-8
+      CACHE_DIR: /cache_image
+    restart: always
