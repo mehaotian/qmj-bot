@@ -1,4 +1,3 @@
-import nonebot
 from nonebot import on_command
 from nonebot.adapters.qq import (
     Bot,
@@ -6,12 +5,13 @@ from nonebot.adapters.qq import (
     MessageSegment,
     Message
 )
-
-
+# from nonebot.adapters.qq.message import MessageMarkdown
+# from nonebot.adapters.qq.models import MessageMarkdownParams
 from nonebot.rule import to_me
 
 # 定义一个指令，指令名称为 say，优先级为 9，阻塞为 True
 say = on_command("签到", rule=to_me(), priority=9, block=True)
+
 
 @say.handle()
 async def to_say_handle(bot: Bot, event: GroupAtMessageCreateEvent):
