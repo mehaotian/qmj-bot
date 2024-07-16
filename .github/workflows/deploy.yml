@@ -31,8 +31,7 @@ jobs:
           envs: DEPLOY_PATH
           script: |
             cd $DEPLOY_PATH
-            docker compose up -d --pull always
-
+            ./run.sh
       - name: update deployment status
         uses: bobheadxi/deployments@v0.6.2
         if: always()
