@@ -3,7 +3,9 @@ from nonebot.adapters.qq import Event
 from nonebot.exception import IgnoredException
 from nonebot.message import run_preprocessor
 
+from .models import init_models
 
+init_models()
 @run_preprocessor
 async def ignore_prod(event: Event):
     """
