@@ -6,14 +6,17 @@ class users(Enum):
     定义用户相关接口
     """
     # 接口前缀
-    api = "/api/users"
+    api:str = "/api/users"
     # 注册用户
-    qqauth = f"{api}/qqauth"
+    qqauth:str = f"{api}/qqauth"
     # 登录
-    login = f"{api}/login"
+    login:str = f"{api}/login"
     # 忘记密码
-    forget_password = f"{api}/forget_password"
-    get_user = f"{api}/get_user"
+    forget_password:str = f"{api}/forget_password"
+    # 获取用户信息
+    get_user:str = f"{api}/get_user"
+    # 绑定群组
+    bind_group: str = f"{api}/bind_group"
 
 
 class sys(Enum):

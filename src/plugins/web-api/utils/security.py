@@ -10,9 +10,9 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 SECRET_KEY = "91ff62b8c69635ed"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 300
 # 一个月过期
-REFRESH_ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30
+# REFRESH_ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30
 
 access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
@@ -41,6 +41,7 @@ def get_user_data(token: str):
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
     except JWTError:
+        # 打印实际错误信息
         return None
 
 

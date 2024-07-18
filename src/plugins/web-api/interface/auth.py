@@ -1,6 +1,6 @@
 import httpx
 from nonebot.log import logger
-from fastapi import APIRouter
+from fastapi import APIRouter, Header
 from pydantic import BaseModel
 # 获取配置信息
 from src.config import global_config
@@ -63,29 +63,29 @@ async def qq_auth(item: QQAuth):
                 return create_response(data=user_data, message='success')
             except Exception as e:
                 logger.error(f'创建用户失败：{e}')
-                return create_response(ret=1, message='创建用户失败')
+                return create_response(ret=1001, message='创建用户失败')
 
-    return create_response(ret=1, message='error')
+    return create_response(ret=1002, message='code 不存在')
 
 
 class UserItem(BaseModel):
     signature: str
     rawData: str
-    token: str
     iv: str
     encryptedData: str
 
 
 @router.post(users.login.value)
-async def loign(item: UserItem):
+async def loign(item: UserItem, token: str = Header(None)):
     """
     用户登录
     """
+    if not token:
+        return create_response(ret=1002, message='用户 Token 不存在')
 
-    user = get_user_data(item.token)
+    user = get_user_data(token)
     openid = user.get('openid')
     session_key = user.get('session_key')
-    print('session_key:', session_key)
 
     if check_signature(item.rawData, session_key, item.signature):
         user_info = decrypt_data(item.encryptedData, session_key, item.iv)
@@ -97,24 +97,50 @@ async def loign(item: UserItem):
         print(user)
         return create_response(data=user, message='success')
     else:
-        print("数据签名验证失败")
-        return create_response(ret=1, message='error')
+        logger.error("数据签名验证失败")
+        return create_response(ret=1001, message='数据签名验证失败')
 
 
-# @router.post(users.get_user.value)
-# async def get_user(item: UserItem):
-#     """
-#     获取用户信息
-#     """
-#     if check_signature(item.rawData, item.session_key, item.signature):
-#         user_info = decrypt_data(item.encryptedData, item.session_key, item.iv)
-#         return create_response(data=user_info, message='success')
-#     else:
-#         print("数据签名验证失败")
-#         return create_response(ret=1, message='error')
+class GidItem(BaseModel):
+    iv: str
+    encryptedData: str
+
+
+@router.post(users.bind_group.value)
+async def bind_group(item: GidItem, token: str = Header(None)):
+    """
+    获取群gid
+    参数：
+        - item: GidItem
+        - token: 用户token
+    """
+    if not token:
+        return create_response(ret=1002, message='用户 Token 不存在')
+    try:
+        user = get_user_data(token)
+        encrypted_data = item.encryptedData
+        iv = item.iv
+        session_key = user['session_key']
+
+        print('encrypted_data', encrypted_data)
+        print('iv', iv)
+        print('session_key', session_key)
+
+        group_info = decrypt_data(encrypted_data=encrypted_data, session_key=session_key, iv=iv)
+
+        return create_response(data=group_info, message='success')
+    except Exception as e:
+        logger.error(e)
+        return create_response(ret=1001, message='获取群信息失败:'+str(e))
 
 
 @router.get('/')
 async def root():
-    # user = get_user_data("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzZXNzaW9uX2tleSI6ImIwRnhiVEZ6TldGWFNYbGxkMk16Vnc9PSIsIm9wZW5pZCI6IjQ0Q0QwNUM5QTNFQzZEQTg0MUE0RUUxQzdEOEE4RUZCIiwiZXhwIjoxNzIxMjMzMTAwfQ.FsRNMtwrIvinYioaC7ZLqbcDx-JtvrQqGhh1nPwjaEM")
-    return {"message": 'Not Found'}
+    user = get_user_data(
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJvcGVuaWQiOiI0NENEMDVDOUEzRUM2REE4NDFBNEVFMUM3RDhBOEVGQiIsImV4cCI6MTc0NzE4OTk4MCwic2Vzc2lvbl9rZXkiOiJjRlZwWnpWNlluWlljVEp4VDBRd2JnPT0ifQ.D--j-2mA1-mqpG3WLMAsdQ9Pc6bZAx1vVhHkCyBhGW0")
+    encrypted_data = "yNtVzxH4HjTDLxI4TAQ57z1FfGeuNFp08Zgu5jZ32OT3V8hgq2Dfbrwww8DuGyI+ERGy0Qpe+HU5i5V+Jlbkvybk4l3wjOiXtMXtsKeTKIbkWuNxqRI02+05vtbq8woEJEfEre+vwwjZGjF0Mvrk0peYrt/7m05vsrPaU/ewSPg="
+    iv = "M2U0MGZiNjU4ZGQ0NDYwNw=="
+    session_key = "cFVpZzV6YnZYcTJxT0Qwbg=="
+
+    userinfo = decrypt_data(encrypted_data=encrypted_data, session_key=session_key, iv=iv)
+    return {"message": user, "userinfo": userinfo}

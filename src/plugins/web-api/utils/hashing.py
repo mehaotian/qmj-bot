@@ -21,7 +21,7 @@ def check_signature(rawData, session_key, signature):
     return signature == signature2
 
 
-def decrypt_data(encrypted_data, session_key, iv):
+def decrypt_data(encrypted_data='', session_key='', iv=''):
     """
     解密数据
     """
