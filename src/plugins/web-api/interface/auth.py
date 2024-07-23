@@ -89,12 +89,21 @@ async def loign(item: UserItem, token: str = Header(None)):
 
     if check_signature(item.rawData, session_key, item.signature):
         user_info = decrypt_data(item.encryptedData, session_key, item.iv)
-        user = await UserTable.update_user(
-            openid=openid,
-            nickname=user_info.get('nickName'),
-            avatar=user_info.get('avatarUrl'),
-        )
-        print(user)
+
+        # 验证用户是否存在
+        # 这里主要是解决用户信息更新问题，有可能存储的token是错误的，但是仍然走有token的登录，这时候要更新
+        have_user = await UserTable.check_user(openid=openid)
+
+        if not have_user:
+            await UserTable.create_user(openid=openid, token=token)
+        else:
+            # await UserTable.update_token(openid=openid, token=token)
+            user = await UserTable.update_user(
+                openid=openid,
+                token=token,
+                nickname=user_info.get('nickName'),
+                avatar=user_info.get('avatarUrl'),
+            )
         return create_response(data=user, message='success')
     else:
         logger.error("数据签名验证失败")
@@ -131,7 +140,7 @@ async def bind_group(item: GidItem, token: str = Header(None)):
         return create_response(data=group_info, message='success')
     except Exception as e:
         logger.error(e)
-        return create_response(ret=1001, message='获取群信息失败:'+str(e))
+        return create_response(ret=1001, message='获取群信息失败:' + str(e))
 
 
 @router.get('/')
