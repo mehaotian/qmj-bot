@@ -1,10 +1,11 @@
-import uuid
-from datetime import date, timedelta
+"""
+抽奖表
+@Author: ht
+@Date: 2024-07-26
+@description: 抽奖表
+"""
 from tortoise import fields
 from tortoise.models import Model
-
-# from nonebot.log import logger
-from src.utils import download_image
 
 
 class LotteryTable(Model):
@@ -30,8 +31,6 @@ class LotteryTable(Model):
     img = fields.CharField(max_length=255, default="")
     # 抽奖描述
     desc = fields.TextField(default="")
-
-
 
     # 创建时间
     create_time = fields.DatetimeField(auto_now_add=True)

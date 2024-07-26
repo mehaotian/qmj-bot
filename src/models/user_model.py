@@ -1,3 +1,9 @@
+"""
+用户表
+@Author: ht
+@Date: 2024-07-26
+@description: 用户表
+"""
 import uuid
 from datetime import date, timedelta
 from tortoise import fields
@@ -22,10 +28,7 @@ class UserTable(Model):
     nickname = fields.CharField(max_length=255, default="")
     # 头像
     avatar = fields.CharField(max_length=255, default="")
-    # 魅力值
-    charm = fields.IntField(default=0)
-    # 金币
-    gold = fields.IntField(default=0)
+
     # 累计登录次数
     sign_count = fields.IntField(default=0)
     # 连续登录天数

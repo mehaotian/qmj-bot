@@ -82,7 +82,6 @@ async def loign(item: UserItem, token: str = Header(None)):
     """
     if not token:
         return create_response(ret=1002, message='用户 Token 不存在')
-
     user = get_user_data(token)
     openid = user.get('openid')
     session_key = user.get('session_key')

@@ -11,10 +11,9 @@ class users(Enum):
     qqauth:str = f"{api}/qqauth"
     # 登录
     login:str = f"{api}/login"
-    # 忘记密码
-    forget_password:str = f"{api}/forget_password"
+
     # 获取用户信息
-    get_user:str = f"{api}/get_user"
+    get_user:str = f"{api}/userinfo"
     # 绑定群组
     bind_group: str = f"{api}/bind_group"
 
