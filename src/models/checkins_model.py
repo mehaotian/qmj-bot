@@ -10,6 +10,8 @@ class CheckInsTable(Model):
     id = fields.IntField(pk=True, generated=True)
     # 用户唯一标识
     uid = fields.ForeignKeyField("default.UserTable", related_name="checkins", on_delete=fields.CASCADE)
+    # 背景图地址
+    bg_img = fields.CharField(max_length=255, default="")
     # 累计签到次数
     total_count = fields.IntField(default=0)
     # 连续签到次数
