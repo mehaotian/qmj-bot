@@ -29,13 +29,6 @@ class UserTable(Model):
     # 头像
     avatar = fields.CharField(max_length=255, default="")
 
-    # 累计登录次数
-    sign_count = fields.IntField(default=0)
-    # 连续登录天数
-    sign_day = fields.IntField(default=0)
-    # 背景图地址
-    bg_img = fields.CharField(max_length=255, default="")
-
     # 最后登录时间
     last_sign = fields.DateField(default=date(2000, 1, 1))
 
