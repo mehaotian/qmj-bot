@@ -87,7 +87,11 @@ async def loign(item: UserItem, token: str = Header(None)):
     session_key = user.get('session_key')
 
     if check_signature(item.rawData, session_key, item.signature):
-        user_info = decrypt_data(item.encryptedData, session_key, item.iv)
+        try:
+            user_info = decrypt_data(item.encryptedData, session_key, item.iv)
+        except Exception as e:
+            logger.error(e)
+            return create_response(ret=1001, message='解密用户信息失败')
 
         # 验证用户是否存在
         # 这里主要是解决用户信息更新问题，有可能存储的token是错误的，但是仍然走有token的登录，这时候要更新
@@ -133,8 +137,11 @@ async def bind_group(item: GidItem, token: str = Header(None)):
         print('encrypted_data', encrypted_data)
         print('iv', iv)
         print('session_key', session_key)
-
-        group_info = decrypt_data(encrypted_data=encrypted_data, session_key=session_key, iv=iv)
+        try:
+            group_info = decrypt_data(encrypted_data=encrypted_data, session_key=session_key, iv=iv)
+        except Exception as e:
+            logger.error(e)
+            return create_response(ret=1001, message='解密群信息失败')
 
         return create_response(data=group_info, message='success')
     except Exception as e:
