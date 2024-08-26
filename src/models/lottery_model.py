@@ -13,25 +13,26 @@ class LotteryTable(Model):
     id = fields.IntField(pk=True, generated=True)
     # 发布用户
     uid = fields.IntField(default=0)
+    # 抽奖类型 1: 普通抽奖 2: 兑换码
+    lottery_type = fields.IntField(default=1)
     # 抽奖名称
     name = fields.CharField(max_length=255, default="")
     # 抽奖分数
-    score = fields.IntField(default=0)
+    score = fields.IntField(default=1)
     # 开奖类型 1: 按人数开奖 2: 按时间开奖
-    type = fields.IntField(default=1)
-    # 开奖时间 ，如果type 为1 ,未满足时按开奖时间
+    open_type = fields.IntField(default=1)
+    # 开奖时间 ，如果type 为 1 , 未满足时按开奖时间
     open_time = fields.DatetimeField(null=True)
     # 开奖人数
     open_num = fields.IntField(default=0)
-
     # 抽奖状态 1: 进行中 2:已结束
     status = fields.IntField(default=1)
-
     # 抽奖图片
     img = fields.CharField(max_length=255, default="")
     # 抽奖描述
     desc = fields.TextField(default="")
-
+    # 描述图片 例子 ['lottery/1.jpg', 'https://lottery/2.jpg']
+    desc_img = fields.JSONField(default=[])
     # 创建时间
     create_time = fields.DatetimeField(auto_now_add=True)
     # 更新时间

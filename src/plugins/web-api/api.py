@@ -30,3 +30,13 @@ class sys(Enum):
     get_user = f"{api}/get_user"
     # 验证用户key
     verify_key = f"{api}/verify_key"
+
+
+class upload(Enum):
+    """
+    上传接口
+    """
+    # 接口前缀
+    api = "/api/upload"
+    # 上传文件
+    lottery = f"{api}/lottery"

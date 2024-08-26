@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from .interface import (
     auth,
     user,
+    upload,
     system
 )
 
@@ -17,6 +18,8 @@ app.include_router(auth.router)
 # 用户相关接口
 app.include_router(user.router)
 
+# 上传相关接口
+app.include_router(upload.router)
 # # 系统相关
 # app.include_router(system.router)
 
