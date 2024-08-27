@@ -1,3 +1,5 @@
+import aiomcache
+
 from src.plugins.tortoise_orm import add_model
 
 
@@ -20,3 +22,13 @@ def init_models():
     # --- 抽奖 ---
     # 添加抽奖模型
     add_model("src.models.lottery_model")
+
+
+class MemcacheClient:
+    _client = None
+
+    @classmethod
+    def get_client(cls):
+        if cls._client is None or cls._client.closed:
+            cls._client = aiomcache.Client("127.0.0.1", 11211)
+        return cls._client

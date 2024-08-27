@@ -14,6 +14,8 @@ config = get_driver().config
 secret_id = config.secretid
 secret_key = config.secretkey
 bucket = config.bucket
+imgurl = config.imgurl
+
 region = 'ap-beijing'
 # 替换为用户的 region，已创建桶归属的 region 可以在控制台查看，https://console.cloud.tencent.com/cos5/bucket
 scheme = 'https'  # 指定使用 http/https 协议来访问 COS，默认为 https，可不填

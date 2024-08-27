@@ -32,25 +32,24 @@ class ApiPageResponse:
             message: str = "Success",
             data: Union[None, Any] = None,
             page: int = 0,
-            page_size: int = 0,
+            limit: int = 0,
             total: int = 0
     ):
         self.ret = ret
         self.message = message
         self.data = data
         self.page = page
-        self.page_size = page_size
+        self.limit = limit
         self.total = total
 
 
 # 创建通用响应对象
-def create_page_response(ret: int = 0, message: str = "Success", page: int = 0, page_size: int = 0, total: int = 0,
+def create_page_response(ret: int = 0, message: str = "Success", page: int = 0, limit: int = 0, total: int = 0,
                          data: Any = None):
-    return ApiPageResponse(ret=ret, message=message, data=data, page=page, page_size=page_size, total=total)
+    return ApiPageResponse(ret=ret, message=message, data=data, page=page, limit=limit, total=total)
 
 
-def create_response(ret: int = 0, message: str = "Success", page: int = 0, page_size: int = 0, total: int = 0,
-                    data: Any = None):
+def create_response(ret: int = 0, message: str = "Success" ,data: Any = None):
     return ApiResponse(ret=ret, message=message, data=data)
 
 
