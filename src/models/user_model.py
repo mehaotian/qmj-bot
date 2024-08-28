@@ -6,6 +6,8 @@
 """
 import uuid
 from datetime import date, timedelta
+from typing import Dict, Any, List
+
 from tortoise import fields
 from tortoise.models import Model
 
@@ -87,3 +89,8 @@ class UserTable(Model):
         user_dict['create_time'] = user_dict['create_time'].strftime('%Y-%m-%d %H:%M:%S')
         user_dict['update_time'] = user_dict['update_time'].strftime('%Y-%m-%d %H:%M:%S')
         return user_dict
+
+    @classmethod
+    async def get_users_by_ids(cls, user_ids: List[int]) -> Dict[int, Dict[str, Any]]:
+        users = await cls.filter(id__in=user_ids)
+        return {user.id: user for user in users}

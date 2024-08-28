@@ -30,9 +30,12 @@ class lottery(Enum):
     get_list = f"{api}/list"
     # 获取抽奖详情
     get_detail = f"{api}/detail"
+    # 加入抽奖
+    join = f"{api}/join"
     # 获取抽奖用户
     get_user = f"{api}/get_user"
-
+    # 手动开奖
+    open = f"{api}/open"
 
 class upload(Enum):
     """
