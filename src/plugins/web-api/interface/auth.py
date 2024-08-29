@@ -149,6 +149,53 @@ async def bind_group(item: GidItem, token: str = Header(None)):
         return create_response(ret=1001, message='获取群信息失败:' + str(e))
 
 
+class UserItem(BaseModel):
+    openid: str
+    session_key: str
+    nickname: str
+    avatar: str
+
+
+@router.post(users.create.value)
+async def create_user(item: UserItem):
+    """
+    创建用户
+    """
+    openid = item.openid
+    session_key = item.session_key
+
+    token_data = get_token_data(openid=openid, session_key=session_key)
+    token = token_data['token']
+    have_user = await UserTable.check_user(openid=openid)
+    user_data = {
+        "token": token
+    }
+    if not have_user:
+        user = await UserTable.create_user(openid=openid, token=token)
+        print('创建用户成功')
+    else:
+        user = await UserTable.update_token(openid=openid, token=token)
+        print('更新用户成功')
+
+    user_data.update({"id": user.id})
+
+    # 验证用户是否存在
+    # 这里主要是解决用户信息更新问题，有可能存储的token是错误的，但是仍然走有token的登录，这时候要更新
+    have_user = await UserTable.check_user(openid=openid)
+
+    if not have_user:
+        await UserTable.create_user(openid=openid, token=token)
+    else:
+        # await UserTable.update_token(openid=openid, token=token)
+        user = await UserTable.update_user(
+            openid=openid,
+            token=token,
+            nickname=item.nickname,
+            avatar=item.avatar,
+        )
+    return create_response(data=user, message='success')
+
+
 @router.get('/')
 async def root():
     user = get_user_data(

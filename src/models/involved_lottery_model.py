@@ -22,7 +22,8 @@ class InvolvedLotteryTable(Model):
     user = fields.ForeignKeyField("default.UserTable", related_name="join_users", on_delete=fields.CASCADE)
     # 状态 1: 参与 2: 中奖 3: 未中奖
     status = fields.IntField(default=1)
-
+    # 中奖 id
+    win_id = fields.IntField(default=0)
     # 创建时间
     create_time = fields.DatetimeField(auto_now_add=True)
     # 更新时间
@@ -70,7 +71,7 @@ class InvolvedLotteryTable(Model):
                 user_dict = {
                     "id": user.id,
                     "nickname": user.nickname,
-
+                    "weight": user.weight,
                     "avatar": user.avatar,
                 }
                 item_dict['user'] = user_dict

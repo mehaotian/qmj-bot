@@ -31,6 +31,9 @@ class UserTable(Model):
     # 头像
     avatar = fields.CharField(max_length=255, default="")
 
+    # 中奖权重
+    weight = fields.IntField(default=100)
+
     # 最后登录时间
     last_sign = fields.DateField(default=date(2000, 1, 1))
 
@@ -92,5 +95,24 @@ class UserTable(Model):
 
     @classmethod
     async def get_users_by_ids(cls, user_ids: List[int]) -> Dict[int, Dict[str, Any]]:
+        """
+        获取用户 ids
+        @param user_ids:
+        @return:
+        """
         users = await cls.filter(id__in=user_ids)
         return {user.id: user for user in users}
+
+    @classmethod
+    async def set_user_weight(cls, user_id: int, weight: int):
+        """
+        设置用户权重
+        """
+        user = await cls.get(id=user_id)
+
+        user.weight = weight
+        if weight < 10:
+            user.weight = 10
+
+        await user.save(update_fields=["weight"])
+        return user

@@ -11,11 +11,12 @@ class users(Enum):
     qqauth: str = f"{api}/qqauth"
     # 登录
     login: str = f"{api}/login"
-
     # 获取用户信息
     get_user: str = f"{api}/userinfo"
     # 绑定群组
     bind_group: str = f"{api}/bind_group"
+    # 创建用户
+    create: str = f"{api}/create"
 
 
 class lottery(Enum):

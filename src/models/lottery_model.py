@@ -89,7 +89,6 @@ class LotteryTable(Model):
                 user_dict = {
                     "id": user.id,
                     "nickname": user.nickname,
-
                     "avatar": user.avatar,
                 }
                 item_dict['user'] = user_dict
