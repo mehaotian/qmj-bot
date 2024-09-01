@@ -39,6 +39,8 @@ class lottery(Enum):
     get_winner = f"{api}/get_winner"
     # 手动开奖
     open = f"{api}/open"
+    # 获取奖品列表
+    get_prize_list = f"{api}/prize_list"
 
 class upload(Enum):
     """

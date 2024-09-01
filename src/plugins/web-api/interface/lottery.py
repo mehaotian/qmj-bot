@@ -21,27 +21,32 @@ from ..api import lottery
 router = APIRouter()
 
 
+class PrizeItem(BaseModel):
+    # 抽奖名称
+    name: str
+    # 抽奖图片
+    img_url: str
+    # 奖品类型 1: 奖品 2: 金币 3: 喵币 4: 兑换券(签到券,抽奖券) 5: 兑换码
+    prize_type: int
+    # 奖品份数
+    prize_count: int
+
+
 class LotteryItem(BaseModel):
     # 发布者user_id
     user_id: int
-    # 抽奖类型 1: 普通抽奖 2: 兑换码
-    lottery_type: int
-    # 抽奖名称
-    name: str
-    # 抽奖份数
-    num: int
     # 开奖类型 1: 按人数开奖 2: 按时间开奖
     open_type: int
     # 开奖时间 ，如果type 为 1 , 未满足时按开奖时间
     open_time: str
     # 开奖人数
     open_num: int
-    # 抽奖图片
-    img_url: str
     # 抽奖描述
     desc: str
     # 描述图片 例子 ['lottery/1.jpg', 'https://lottery/2.jpg']
     desc_img: List[str]
+    # 奖品
+    prizes: List[PrizeItem]
 
 
 @router.post(lottery.add.value)
@@ -65,43 +70,43 @@ async def lottery_add(item: LotteryItem, token: str = Header(None)):
         if user_id != item.user_id:
             return create_response(ret=1004, message='用户信息不匹配')
 
+        print(item.prizes)
         options = {
             "user_id": user_id,
-            "lottery_type": item.lottery_type,
-            "name": item.name,
-            "num": item.num,
+            # 抽奖类型 1: 普通抽奖 2: 盲盒抽奖
+            "lottery_type": 1,
             "open_type": item.open_type,
             "open_time": item.open_time,
             "open_num": item.open_num,
-            "img_url": item.img_url,
             "desc": item.desc,
             "desc_img": item.desc_img
         }
 
         lotteryData = await LotteryTable.create_lottery(options)
-        # 创建通用抽奖奖品 ,这个接口创建的抽奖都是通用抽奖
-        # 创建奖品
-        prize_data = {
-            # 抽奖id
-            "lottery_id": lotteryData.id,
-            # 抽奖类型 1 通用抽奖 2 盲盒抽奖
-            "type": 1,
-            # 奖品类型 1: 奖品 2: 金币 3: 喵币 4: 兑换券(签到券,抽奖券) 5: 兑换码
-            "prize_type": item.lottery_type,
-            "name": item.name,
-            "prize_count": item.num,
-            # 状态 ,默认是2 ,没有开奖
-            "status": 2
-        }
 
-        await PrizeTable.create_prize(prize_data)
+        for prize in item.prizes:
+            prize_data = {
+                # 抽奖id
+                "lottery_id": lotteryData.id,
+                # 抽奖类型 1 通用抽奖 2 盲盒抽奖
+                "type": 1,
+                # 奖品类型 1: 奖品 2: 金币 3: 喵币 4: 兑换券(签到券,抽奖券) 5: 兑换码
+                "prize_type": prize.prize_type,
+                "name": prize.name,
+                "img_url": prize.img_url,
+                "prize_count": prize.prize_count,
+                # 状态 ,默认是2 ,没有开奖
+                "status": 2
+            }
+            await PrizeTable.create_prize(prize_data)
 
         return create_response(
             ret=0,
             data={
                 "lottery_id": lotteryData.id,
             },
-            message='发布抽奖成功')
+            message='发布抽奖成功'
+        )
 
     except Exception as e:
         logger.error(f'发布抽奖失败：{e}')
@@ -124,6 +129,22 @@ async def lottery_list(page: int = Query(1, ge=1), limit: int = Query(10, ge=1))
     except Exception as e:
         logger.error(f'获取抽奖列表失败：{e}')
         return create_response(ret=1001, data=str(e), message='获取抽奖列表失败')
+
+@router.get(lottery.get_prize_list.value)
+async def lottery_prize_list(lottery_id=Query('')):
+    """
+    获取抽奖奖品列表
+    @param lottery_id:
+    @return:
+    """
+    try:
+        prize_data = await PrizeTable.get_list(lottery_id=lottery_id)
+
+        return create_response(ret=0, data=prize_data, message='获取抽奖奖品列表成功')
+
+    except Exception as e:
+        logger.error(f'获取抽奖奖品列表失败：{e}')
+        return create_response(ret=1001, data=str(e), message='获取抽奖奖品列表失败')
 
 
 @router.get(lottery.get_detail.value)

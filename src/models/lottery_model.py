@@ -8,6 +8,7 @@ from tortoise import fields
 from tortoise.models import Model
 
 from src.models import MemcacheClient
+from src.models.prize_model import PrizeTable
 from src.models.user_model import UserTable
 from nonebot import get_driver
 
@@ -22,10 +23,6 @@ class LotteryTable(Model):
     user = fields.ForeignKeyField("default.UserTable", related_name="lottery", on_delete=fields.CASCADE)
     # 抽奖类型 1: 普通抽奖 2: 兑换码
     lottery_type = fields.IntField(default=1)
-    # 抽奖名称
-    name = fields.CharField(max_length=255, default="")
-    # 抽奖份数
-    num = fields.IntField(default=1)
     # 开奖类型 1: 按人数开奖 2: 按时间开奖
     open_type = fields.IntField(default=1)
     # 开奖时间 ，如果type 为 1 , 未满足时按开奖时间
@@ -34,8 +31,6 @@ class LotteryTable(Model):
     open_num = fields.IntField(default=0)
     # 抽奖状态 1: 进行中 2:已结束
     status = fields.IntField(default=1)
-    # 抽奖图片
-    img_url = fields.CharField(max_length=255, default="")
     # 抽奖描述
     desc = fields.CharField(max_length=255, default="")
     # 描述图片 例子 ['lottery/1.jpg', 'https://lottery/2.jpg']
@@ -85,6 +80,7 @@ class LotteryTable(Model):
             for item in items:
                 item_dict = {k: v for k, v in item.__dict__.items()
                              if not k.startswith('_')}
+
                 user = users.get(item.user_id, {})
                 user_dict = {
                     "id": user.id,
@@ -98,9 +94,6 @@ class LotteryTable(Model):
                 item_dict['open_time'] = item_dict['open_time'].strftime('%Y-%m-%d %H:%M:%S')
                 # 获取最后更新时间
                 item_dict['update_time'] = item_dict['update_time'].strftime('%Y-%m-%d %H:%M:%S')
-
-                # 封面图
-                item_dict['img_url'] = imgurl + '/' + item_dict['img_url']
                 # 描述图
                 desc_img = item_dict['desc_img']
                 for i in range(len(desc_img)):
@@ -108,7 +101,13 @@ class LotteryTable(Model):
                         desc_img[i] = imgurl + '/' + desc_img[i]
 
                 item_dict['user'] = user_dict
+                prizes = await PrizeTable.get_list(item.id, 2)
+                item_dict['prizes'] = prizes
+
+                print(item_dict)
                 result.append(item_dict)
+
+            print(result)
 
             return {"total": total_count, "items": result}
 
@@ -142,9 +141,6 @@ class LotteryTable(Model):
 
         # 获取最后更新时间
         lottery_dict['update_time'] = lottery_dict['update_time'].strftime('%Y-%m-%d %H:%M:%S')
-
-        # 封面图
-        lottery_dict['img_url'] = imgurl + '/' + lottery_dict['img_url']
 
         # 描述图
         desc_img = lottery_dict['desc_img']

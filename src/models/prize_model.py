@@ -8,6 +8,10 @@ from tortoise import fields
 from tortoise.models import Model
 
 from src.models.user_model import UserTable
+from nonebot import get_driver
+
+config = get_driver().config
+imgurl = config.imgurl
 
 
 class PrizeTable(Model):
@@ -17,10 +21,10 @@ class PrizeTable(Model):
     lottery = fields.ForeignKeyField("default.LotteryTable", related_name="join_users", on_delete=fields.CASCADE)
     # 抽奖类型 1 通用抽奖 2 盲盒抽奖
     type = fields.IntField(default=1)
-    # 奖品类型 1: 奖品 2: 金币 3: 喵币 4: 兑换券(签到券,抽奖券) 5: 兑换码
-    prize_type = fields.IntField(default=1)
     # 奖品名称
     name = fields.CharField(max_length=255, default="")
+    # 奖品类型 1: 奖品 2: 金币 3: 喵币 4: 兑换券(签到券,抽奖券) 5: 兑换码
+    prize_type = fields.IntField(default=1)
     # 奖品图片 ,只有盲盒抽奖才会上传图片
     img_url = fields.CharField(max_length=255, default="")
     # 奖品份数 ,最低1份
@@ -59,7 +63,7 @@ class PrizeTable(Model):
         return await cls.get_or_none(id=lottery_id)
 
     @classmethod
-    async def get_list(cls, page: int = 1, limit: int = 10):
+    async def get_list(cls, lottery_id: int, type: int = 1):
         """
         获取抽奖列表
         @param page: 页码
@@ -68,30 +72,28 @@ class PrizeTable(Model):
         """
 
         try:
-            total_count = await cls.all().count()
-
-            items = await cls.all().prefetch_related("user").limit(limit).offset((page - 1) * limit)
-            user_ids = [item.user_id for item in items]
-            users = await UserTable.get_users_by_ids(user_ids)
-
+            prize_data = await cls.filter(lottery_id=lottery_id).order_by('create_time')
             result = []
-            for item in items:
+            for item in prize_data:
                 item_dict = {k: v for k, v in item.__dict__.items()
                              if not k.startswith('_')}
-                user = users.get(item.user_id, {})
-                user_dict = {
-                    "id": user.id,
-                    "nickname": user.nickname,
-                    "avatar": user.avatar,
-                }
-                item_dict['user'] = user_dict
-                result.append(item_dict)
+                item_dict['img_url'] = imgurl + '/' + item_dict['img_url']
+
+                if type == 2:
+                    formdata = {
+                        "name": item_dict['name'],
+                        "img_url": item_dict['img_url'],
+                    }
+                else:
+                    item_dict['create_time'] = item_dict['create_time'].strftime('%Y-%m-%d %H:%M:%S')
+                    item_dict['update_time'] = item_dict['update_time'].strftime('%Y-%m-%d %H:%M:%S')
+                    formdata = item_dict
+                result.append(formdata)
 
             print(result)
 
-            return {"total": total_count, "items": result}
+            return result
+
         except Exception as e:
             print(e)
             return {"total": 0, "items": []}
-
-
