@@ -1,7 +1,5 @@
 import random
 
-import random
-
 
 def generate_6_digit_uid():
     """
@@ -19,25 +17,30 @@ class Lottery:
         """
         self.users = users
 
-    def draw_winner(self):
+    def draw_winners(self, num_winners):
         """
-        根据用户的权重随机抽取一个中奖者，中奖后降低其权重。
+        根据用户的权重随机抽取多个中奖者，中奖后降低其权重。
+
+        参数:
+        num_winners (int): 要抽取的中奖人数。
 
         返回:
-        str: 中奖用户的名字。
+        list: 中奖用户的名字列表。
         """
+        winners = []
+        candidates = self.users.copy()  # 复制用户列表以避免修改原始数据
 
-        # names = [user['user_id'] for user in self.users]
-        weights = [user['user']['weight'] for user in self.users]
+        for _ in range(num_winners):
+            if not candidates:
+                break  # 如果候选用户列表为空，停止抽奖
 
-        # 使用 random.choices 按权重随机选择一个用户
-        winner = random.choices(self.users, weights=weights, k=1)[0]
+            weights = [user['user']['weight'] for user in candidates]
 
-        # # 找到中奖用户并降低权重
-        # for user in self.users:
-        #     if user['name'] == winner:
-        #         # user['weight'] = max(10, user['weight'] * 0.9)  # 将权重乘以 0.9，但不低于 10
-        #         # self.win_count[winner] += 1  # 记录中奖次数
-        #         break
+            # 使用 random.choices 按权重随机选择一个用户
+            winner = random.choices(candidates, weights=weights, k=1)[0]
+            winners.append(winner)
 
-        return winner
+            # 从候选用户列表中移除中奖用户
+            candidates.remove(winner)
+
+        return winners

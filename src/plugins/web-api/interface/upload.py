@@ -1,11 +1,12 @@
 import os
 import shutil
+import sys
 from datetime import datetime
 from distutils.command.upload import upload
 
 import httpx
 from nonebot.log import logger
-from fastapi import APIRouter, Header, File, UploadFile
+from fastapi import APIRouter, Header, File, UploadFile, Query
 from pydantic import BaseModel
 import uuid
 from ..utils.responses import create_response
@@ -14,16 +15,14 @@ from ..api import upload
 
 client = Cos()
 bucket = 'qmj-bot-1255788064'
-response = client.list_objects(Bucket='qmj-bot-1255788064')
 
-print('upload.py', response)
 router = APIRouter()
 
 logger.success(f'Upload API 接口，加载成功')
 
 
 @router.post(upload.api.value)
-async def upload_image(token: str = Header(None), file: UploadFile = File(...)):
+async def upload_image(type: int = Query(1),token: str = Header(None), file: UploadFile = File(...)):
     """
     上传图片
     """
@@ -45,7 +44,15 @@ async def upload_image(token: str = Header(None), file: UploadFile = File(...)):
             shutil.copyfileobj(file.file, buffer)
 
         # 上传的key
-        key = 'lottery/' + unique_filename
+        if type == 1:
+            # 上传的key
+            key = 'lottery/' + unique_filename
+        elif type == 2:
+            key = 'team/' + unique_filename
+        else:
+            key = 'other/' + unique_filename
+
+        # key = 'lottery/' + unique_filename
 
         # 上传文件到腾讯云 COS
         response = client.upload_file(
@@ -76,5 +83,5 @@ def upload_percentage(consumed_bytes, total_bytes):
     """
     if total_bytes:
         rate = int(100 * (float(consumed_bytes) / float(total_bytes)))
-        print('\r{0}% '.format(rate))
+        # print('\r{0}% '.format(rate))
         sys.stdout.flush()

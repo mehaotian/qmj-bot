@@ -35,6 +35,8 @@ class lottery(Enum):
     join = f"{api}/join"
     # 获取抽奖用户
     get_user = f"{api}/get_user"
+    # 获取中奖用户
+    get_winner = f"{api}/get_winner"
     # 手动开奖
     open = f"{api}/open"
 

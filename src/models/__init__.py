@@ -24,6 +24,8 @@ def init_models():
     add_model("src.models.lottery_model")
     # 添加参与抽奖模型
     add_model("src.models.involved_lottery_model")
+    # 添加奖品模型
+    add_model("src.models.prize_model")
 
 
 class MemcacheClient:
