@@ -77,7 +77,7 @@ class LotteryTable(Model):
         try:
             total_count = await cls.all().count()
 
-            items = await cls.all().prefetch_related("user").limit(limit).offset((page - 1) * limit)
+            items = await cls.all().order_by('-create_time').limit(limit).offset((page - 1) * limit)
             user_ids = [item.user_id for item in items]
             users = await UserTable.get_users_by_ids(user_ids)
 
@@ -91,12 +91,27 @@ class LotteryTable(Model):
                     "nickname": user.nickname,
                     "avatar": user.avatar,
                 }
+
+                # 获取时间
+                item_dict['create_time'] = item_dict['create_time'].strftime('%Y-%m-%d %H:%M:%S')
+                # 获取开奖时间
+                item_dict['open_time'] = item_dict['open_time'].strftime('%Y-%m-%d %H:%M:%S')
+                # 获取最后更新时间
+                item_dict['update_time'] = item_dict['update_time'].strftime('%Y-%m-%d %H:%M:%S')
+
+                # 封面图
+                item_dict['img_url'] = imgurl + '/' + item_dict['img_url']
+                # 描述图
+                desc_img = item_dict['desc_img']
+                for i in range(len(desc_img)):
+                    if not desc_img[i].startswith('http'):
+                        desc_img[i] = imgurl + '/' + desc_img[i]
+
                 item_dict['user'] = user_dict
                 result.append(item_dict)
 
-            print(result)
-
             return {"total": total_count, "items": result}
+
         except Exception as e:
             print(e)
             return {"total": 0, "items": []}
@@ -138,6 +153,5 @@ class LotteryTable(Model):
                 desc_img[i] = imgurl + '/' + desc_img[i]
 
         lottery_dict['desc_img'] = desc_img
-
 
         return lottery_dict
