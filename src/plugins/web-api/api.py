@@ -41,6 +41,12 @@ class lottery(Enum):
     open = f"{api}/open"
     # 获取奖品列表
     get_prize_list = f"{api}/prize_list"
+    # 获取中奖名单
+    get_user_list = f"{api}/user_list"
+    # 获取核销列表
+    get_write_off_list = f"{api}/write_off_list"
+    # 修改核销状态
+    edit_write_off = f"{api}/edit_write_off"
 
 class upload(Enum):
     """

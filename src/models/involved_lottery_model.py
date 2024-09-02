@@ -26,8 +26,7 @@ class InvolvedLotteryTable(Model):
     status = fields.IntField(default=1)
     # 中奖 id
     win_id = fields.IntField(default=0)
-    # 中奖信息 {'xxx':'xxx'}
-    # win_info = fields.JSONField(default={})
+
     # 创建时间
     create_time = fields.DatetimeField(auto_now_add=True)
     # 更新时间
@@ -89,18 +88,31 @@ class InvolvedLotteryTable(Model):
             return {"total": 0, "items": []}
 
     @classmethod
-    async def edit_winner_status(cls, lottery_id: int, winner_ids: int):
+    async def edit_winner_status(cls, lottery_id: int, winner_ids: int, prize_id: int):
         """
         编辑中奖状态
         """
         current_time = datetime.now()
 
         # 修改中奖者状态
-        await cls.filter(lottery_id=lottery_id, user_id__in=winner_ids).update(status=2, update_time=current_time)
-        # 修改未中奖者状态
-        await cls.filter(lottery_id=lottery_id).exclude(user_id__in=winner_ids).update(status=3,
-                                                                                       update_time=current_time)
+        await cls.filter(lottery_id=lottery_id, user_id__in=winner_ids).update(status=2, win_id=prize_id,
+                                                                               update_time=current_time)
+        # # 修改未中奖者状态
+        # await cls.filter(lottery_id=lottery_id).exclude(user_id__in=winner_ids).update(status=3,
+        #                                                                                update_time=current_time)
 
+        return True
+
+    @classmethod
+    async def edit_losers_status(cls, lottery_id: int):
+        """
+        修改未中奖者状态
+        @param lottery_id:
+        @return:
+        """
+        current_time = datetime.now()
+        # 修改 status 为 1，都变成3
+        await cls.filter(lottery_id=lottery_id, status=1).update(status=3, update_time=current_time)
         return True
 
     @classmethod

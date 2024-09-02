@@ -31,6 +31,8 @@ class LotteryTable(Model):
     open_num = fields.IntField(default=0)
     # 抽奖状态 1: 进行中 2:已结束
     status = fields.IntField(default=1)
+    # 中奖信息 []
+    win_info = fields.JSONField(default=[])
     # 抽奖描述
     desc = fields.CharField(max_length=255, default="")
     # 描述图片 例子 ['lottery/1.jpg', 'https://lottery/2.jpg']
