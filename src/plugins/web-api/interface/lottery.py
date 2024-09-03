@@ -43,6 +43,8 @@ class LotteryItem(BaseModel):
     open_time: str
     # 开奖人数
     open_num: int
+    # 中奖信息 []
+    win_info: List[str]
     # 抽奖描述
     desc: str
     # 描述图片 例子 ['lottery/1.jpg', 'https://lottery/2.jpg']
@@ -81,6 +83,7 @@ async def lottery_add(item: LotteryItem, token: str = Header(None)):
             "open_time": item.open_time,
             "open_num": item.open_num,
             "desc": item.desc,
+            "win_info": item.win_info or [],
             "desc_img": item.desc_img
         }
 
@@ -336,6 +339,29 @@ async def lottery_user_list(lottery_id: int, token: str = Header(None)):
     return create_response(ret=0, data=user_list, message='获取抽奖中奖用户列表成功')
 
 
+class WinnerItem(BaseModel):
+    write_off_id: int
+    info: List[dict]
+
+
+@router.post(lottery.submit_winner_info.value)
+async def lottery_submit_winner_info(item: WinnerItem, token: str = Header(None)):
+    """
+    提交中奖信息
+    @param item:
+    @param token:
+    @return:
+    """
+    try:
+        if not token:
+            return create_response(ret=1002, message='用户 Token 不存在')
+        user_list = await WriteOffTable.add_write_off_info(write_off_id=item.write_off_id, write_off_info=item.info)
+        return create_response(ret=0, data=user_list, message='用户中奖信息修改成功')
+    except Exception as e:
+        logger.error(f'提交中奖信息失败：{e}')
+        return create_response(ret=1001, data=str(e), message='提交中奖信息失败')
+
+
 @router.get(lottery.get_write_off_list.value)
 async def lottery_write_off_list(lottery_id: int, token: str = Header(None)):
     """
@@ -382,7 +408,6 @@ async def lottery_edit_write_off_status(item: WriteOffItem, token: str = Header(
     check_data = await WriteOffTable.edit_write_off_status(write_off_id=write_off_id, status=status)
 
     msg = '核销成功' if status == 1 else '撤回核销成功'
-
 
     # TODO 这块缺少 发奖的逻辑
 

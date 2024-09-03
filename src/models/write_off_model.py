@@ -73,6 +73,7 @@ class WriteOffTable(Model):
                 grouped_data.append(prize_info)
 
             user_info = {
+                "id": result.id,
                 "user_id": result.user.id,
                 "nickname": result.user.nickname,
                 "status": result.status,
@@ -128,3 +129,12 @@ class WriteOffTable(Model):
         current_time = datetime.now()
         return await cls.filter(id=write_off_id).update(status=status, update_time=current_time)
 
+    @classmethod
+    async def add_write_off_info(cls, write_off_id: int, write_off_info: dict):
+        """
+        添加核销信息
+        @param write_off_id: 核销id
+        @param write_off_info: 核销信息
+        """
+        # 是否存在
+        return await cls.filter(id=write_off_id).update(write_off_info=write_off_info)

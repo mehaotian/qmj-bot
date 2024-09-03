@@ -77,7 +77,8 @@ class PrizeTable(Model):
             for item in prize_data:
                 item_dict = {k: v for k, v in item.__dict__.items()
                              if not k.startswith('_')}
-                item_dict['img_url'] = imgurl + '/' + item_dict['img_url']
+                if item_dict['img_url']:
+                    item_dict['img_url'] = imgurl + '/' + item_dict['img_url']
 
                 if type == 2:
                     formdata = {

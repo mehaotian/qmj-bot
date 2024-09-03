@@ -47,6 +47,8 @@ class lottery(Enum):
     get_write_off_list = f"{api}/write_off_list"
     # 修改核销状态
     edit_write_off = f"{api}/edit_write_off"
+    # 提交中奖信息
+    submit_winner_info = f"{api}/submit_winner_info"
 
 class upload(Enum):
     """
