@@ -63,10 +63,16 @@ class WriteOffTable(Model):
             prize_id = result.prize.id
 
             if prize_id not in prize_dict:
+
+                prize_img = ""
+
+                if result.prize.img_url:
+                    prize_img = config.imgurl + "/" + result.prize.img_url
+
                 prize_info = {
                     "prize_id": prize_id,
                     "prize_name": result.prize.name,
-                    "prize_img": config.imgurl + "/" + result.prize.img_url,
+                    "prize_img": prize_img,
                     "users": []
                 }
                 prize_dict[prize_id] = prize_info

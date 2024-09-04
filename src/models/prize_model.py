@@ -91,8 +91,6 @@ class PrizeTable(Model):
                     formdata = item_dict
                 result.append(formdata)
 
-            print(result)
-
             return result
 
         except Exception as e:
