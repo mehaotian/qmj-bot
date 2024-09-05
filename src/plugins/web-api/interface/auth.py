@@ -1,7 +1,11 @@
+import base64
+import time
+
 import httpx
 from nonebot.log import logger
 from fastapi import APIRouter, Header
 from pydantic import BaseModel
+from Crypto.Cipher import AES
 # 获取配置信息
 from src.config import global_config
 
@@ -12,6 +16,10 @@ from ..utils.responses import create_response
 from ..utils.security import get_token_data, get_user_data
 
 from ..api import users
+from nonebot import get_driver
+
+config = get_driver().config
+GoEasySecretKey = config.goeasysecretkey
 
 router = APIRouter()
 
@@ -194,6 +202,24 @@ async def create_user(item: UserItem):
             avatar=item.avatar,
         )
     return create_response(data=user, message='success')
+
+
+@router.post(users.ws_otp.value)
+async def ws_otp(token: str = Header(None)):
+    """
+    获取 GoEasy-OTP
+    """
+    if not token:
+        return create_response(ret=1002, message='用户 Token 不存在')
+    key = GoEasySecretKey.encode('utf-8')
+    otp = "000" + str(int(round(time.time() * 1000)))
+   
+    cipher = AES.new(key, AES.MODE_ECB)
+    # 确保otp的长度是16的倍数
+    otp = otp.encode('utf-8')
+    encryptedOtp = cipher.encrypt(otp)
+    encryptedOtp = base64.b64encode(encryptedOtp).decode('utf-8')
+    return create_response(ret=0, data={"key": encryptedOtp}, message='获取 otp 成功')
 
 
 @router.get('/')

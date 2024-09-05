@@ -17,6 +17,8 @@ class users(Enum):
     bind_group: str = f"{api}/bind_group"
     # 创建用户
     create: str = f"{api}/create"
+    # websocket OTP
+    ws_otp: str = f"{api}/ws_otp"
 
 
 class lottery(Enum):
