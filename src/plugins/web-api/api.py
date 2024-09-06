@@ -19,6 +19,7 @@ class users(Enum):
     create: str = f"{api}/create"
     # websocket OTP
     ws_otp: str = f"{api}/ws_otp"
+    logout: str = f"{api}/logout"
 
 
 class lottery(Enum):

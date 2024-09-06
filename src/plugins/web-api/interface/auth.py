@@ -89,7 +89,7 @@ async def loign(item: UserItem, token: str = Header(None)):
     用户登录
     """
     if not token:
-        return create_response(ret=1002, message='用户 Token 不存在')
+        return create_response(ret=1002, message='用户未登录')
     user = get_user_data(token)
     openid = user.get('openid')
     session_key = user.get('session_key')
@@ -121,6 +121,28 @@ async def loign(item: UserItem, token: str = Header(None)):
         return create_response(ret=1001, message='数据签名验证失败')
 
 
+@router.post(users.logout.value)
+async def logout(token: str = Header(None)):
+    """
+    用户登出
+    """
+    if not token:
+        return create_response(ret=1002, message='用户未登录')
+    user = get_user_data(token)
+    openid = user.get('openid')
+    # 验证用户是否存在
+    have_user = await UserTable.check_user(openid=openid)
+
+    if not have_user:
+        return create_response(ret=1001, message='用户不存在')
+    else:
+        user = await UserTable.update_user(
+            openid=openid,
+            token='',
+        )
+        return create_response(data=user, message='success')
+
+
 class GidItem(BaseModel):
     iv: str
     encryptedData: str
@@ -135,7 +157,7 @@ async def bind_group(item: GidItem, token: str = Header(None)):
         - token: 用户token
     """
     if not token:
-        return create_response(ret=1002, message='用户 Token 不存在')
+        return create_response(ret=1002, message='用户未登录')
     try:
         user = get_user_data(token)
         encrypted_data = item.encryptedData
@@ -210,10 +232,10 @@ async def ws_otp(token: str = Header(None)):
     获取 GoEasy-OTP
     """
     if not token:
-        return create_response(ret=1002, message='用户 Token 不存在')
+        return create_response(ret=1002, message='用户未登录')
     key = GoEasySecretKey.encode('utf-8')
     otp = "000" + str(int(round(time.time() * 1000)))
-   
+
     cipher = AES.new(key, AES.MODE_ECB)
     # 确保otp的长度是16的倍数
     otp = otp.encode('utf-8')

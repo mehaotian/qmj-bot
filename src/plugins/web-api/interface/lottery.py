@@ -27,13 +27,13 @@ router = APIRouter()
 # 抽离的用户验证函数
 async def get_current_user(token: str = Header(None)):
     if not token:
-        raise HTTPException(status_code=400, detail="用户Token不存在")
+        raise HTTPException(status_code=400, message="用户未登录")
     user = get_user_data(token)
     if not user or 'openid' not in user:
-        raise HTTPException(status_code=400, detail="无效的用户Token")
+        raise HTTPException(status_code=400, message="用户未登录，或登录过期")
     user_data = await UserTable.check_user(openid=user['openid'])
     if not user_data:
-        raise HTTPException(status_code=404, detail="用户不存在")
+        raise HTTPException(status_code=404, message="用户不存在")
     return user_data
 
 # 抽离的抽奖验证函数
@@ -530,7 +530,7 @@ async def lottery_edit_write_off_status(item: WriteOffItem, token: str = Header(
     """
     try:
         if not token:
-            return create_response(ret=1002, message='用户 Token 不存在')
+            return create_response(ret=1002, message='用户未登录')
         
         user = get_user_data(token)
         if not user:
