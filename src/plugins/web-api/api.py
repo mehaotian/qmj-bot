@@ -32,6 +32,8 @@ class lottery(Enum):
     add = f"{api}/add"
     # 获取抽奖列表
     get_list = f"{api}/list"
+    # 获取我的抽奖
+    get_my_list = f"{api}/my_list"
     # 获取抽奖详情
     get_detail = f"{api}/detail"
     # 加入抽奖

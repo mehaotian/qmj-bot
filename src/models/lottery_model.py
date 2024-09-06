@@ -106,20 +106,22 @@ class LotteryTable(Model):
         lottery_dict['create_time'] = cls.format_datetime(lottery_dict.get('create_time'))
         lottery_dict['open_time'] = cls.format_datetime(lottery_dict.get('open_time'))
         lottery_dict['update_time'] = cls.format_datetime(lottery_dict.get('update_time'))
-        
+
         desc_img = lottery_dict.get('desc_img', [])
         lottery_dict['desc_img'] = [cls.format_image_url(img) for img in desc_img]
-        
+
         return lottery_dict
 
     @classmethod
-    async def get_list(cls, page: int = 1, limit: int = 10, status: Optional[int] = None) -> Dict[str, any]:
+    async def get_list(cls, page: int = 1, limit: int = 10, status: Optional[int] = None,
+                       user_id: Optional[int] = None) -> Dict[str, any]:
         """
         获取抽奖列表
         
         @param page: 页码
         @param limit: 每页数量
         @param status: 状态 1: 进行中 2: 已结束，默认为None，查询全部
+        @param user_id: 用户ID，默认为None，查询全部用户的抽奖
         @return: 包含总数和抽奖列表的字典
         """
         try:
@@ -130,6 +132,9 @@ class LotteryTable(Model):
                 else:
                     logger.warning(f"无效的状态值: {status}，将返回空列表")
                     return {"total": 0, "items": []}
+
+            if user_id is not None:
+                query = query.filter(user_id=user_id)
 
             total_count = await query.count()
 
@@ -171,7 +176,7 @@ class LotteryTable(Model):
             lottery = await cls.get_or_none(id=lottery_id)
             if not lottery:
                 return None
-            
+
             user = await UserTable.get_or_none(id=lottery.user_id)
             if not user:
                 logger.warning(f"抽奖 {lottery_id} 的用户 {lottery.user_id} 不存在")
@@ -179,7 +184,7 @@ class LotteryTable(Model):
 
             lottery_dict = {k: v for k, v in lottery.__dict__.items() if not k.startswith('_')}
             lottery_dict = cls.process_lottery_dict(lottery_dict)
-            
+
             lottery_dict['user'] = {
                 "id": user.id,
                 "nickname": user.nickname,

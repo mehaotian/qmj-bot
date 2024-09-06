@@ -167,6 +167,58 @@ async def lottery_list(
         return create_response(ret=1001, message='获取抽奖列表失败，请稍后重试')
 
 
+
+@router.get(lottery.get_my_list.value)
+async def lottery_my_list(
+    page: int = Query(1, ge=1, description="页码，默认为1"),
+    limit: int = Query(10, ge=1, le=100, description="每页数量，默认为10，最大100"),
+    status: Optional[int] = Query(0, ge=0, le=2, description="抽奖状态：0-全部，1-进行中，2-已结束"),
+    user: UserTable = Depends(get_current_user)
+):
+    """
+    获取当前用户的抽奖列表
+
+    参数:
+    - page: 页码，从1开始
+    - limit: 每页显示的数量，1-100之间
+    - status: 抽奖状态筛选，0表示全部，1表示进行中，2表示已结束
+    - user: 当前登录用户，通过依赖注入获取
+
+    返回:
+    - 成功：返回分页后的用户抽奖列表数据
+    - 失败：返回错误信息
+    """
+    try:
+        user_id = user.id
+        
+        list_data = await LotteryTable.get_list(
+            page=page, 
+            limit=limit, 
+            status=status if status != 0 else None,
+            user_id=user_id
+        )
+
+        if not list_data['items']:
+            return create_response(ret=0, data=[], message='暂无抽奖数据')
+
+        return create_page_response(
+            ret=0, 
+            data=list_data['items'], 
+            total=list_data['total'], 
+            page=page, 
+            limit=limit,
+            message='获取用户抽奖列表成功'
+        )
+
+    except ValueError as ve:
+        logger.warning(f'获取用户抽奖列表参数错误：{ve}')
+        return create_response(ret=1002, message=f'参数错误：{str(ve)}')
+    except Exception as e:
+        logger.error(f'获取用户抽奖列表失败：{e}')
+        return create_response(ret=1001, message='获取用户抽奖列表失败，请稍后重试')
+   
+
+
 @router.get(lottery.get_prize_list.value)
 async def lottery_prize_list(lottery_id: int = Query(..., gt=0, description="抽奖ID")):
     """
