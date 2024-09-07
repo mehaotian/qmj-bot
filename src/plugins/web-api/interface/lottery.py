@@ -122,14 +122,19 @@ async def lottery_add(item: LotteryItem, current_user: UserTable = Depends(get_c
             await PrizeTable.create_prize(prize_data)
         if scheduler:
             open_time = datetime.strptime(item.open_time, "%Y-%m-%d %H:%M")
-            scheduler.add_job(
-                scheduler_open_lottery,
-                "date",  # 触发器类型，"date" 表示在指定的时间只执行一次
-                run_date=open_time,  # 开奖时间
-                args=[lotteryData.id, current_user.id],  # 传递给 open_lottery 函数的参数
-                id=f"lottery_{str(lotteryData.id)}",  # 任务 ID，需要确保每个任务的 ID 是唯一的
-            )
-            print('----- 抽奖定时任务添加成功')
+            # 如果当前时间大于的能与 开奖时间，直接开奖
+            if open_time <= datetime.now():
+                await scheduler_open_lottery(lotteryData.id, current_user.id)
+            else:
+                # 添加定时任务
+                scheduler.add_job(
+                    scheduler_open_lottery,
+                    "date",  # 触发器类型，"date" 表示在指定的时间只执行一次
+                    run_date=open_time,  # 开奖时间
+                    args=[lotteryData.id, current_user.id],  # 传递给 open_lottery 函数的参数
+                    id=f"lottery_{str(lotteryData.id)}",  # 任务 ID，需要确保每个任务的 ID 是唯一的
+                )
+                print('----- 抽奖定时任务添加成功')
 
         return create_response(
             ret=0,
