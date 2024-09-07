@@ -12,7 +12,6 @@ from src.models.user_model import UserTable
 from src.models.lottery_model import LotteryTable
 from src.models.involved_lottery_model import InvolvedLotteryTable
 from src.models.write_off_model import WriteOffTable
-from src.utils.tools import Lottery
 
 from ..utils.responses import create_response, create_page_response
 from ..utils.security import get_user_data

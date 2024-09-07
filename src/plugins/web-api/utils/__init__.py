@@ -6,6 +6,7 @@ from src.models.prize_model import PrizeTable
 from src.models.write_off_model import WriteOffTable
 from src.utils.tools import Lottery
 from .responses import create_response
+from .goeasy import goeasy_send_message
 
 
 async def scheduler_open_lottery(lottery_id: int, user_id: int):
@@ -75,6 +76,14 @@ async def scheduler_open_lottery(lottery_id: int, user_id: int):
         # 更新抽奖状态为已结束
         await LotteryTable.filter(id=lottery_id).update(status=2)
 
+        goeasy_content = {
+            "lottery_id": lottery_id,
+            "code": 200,
+            "msg": "已开奖，中奖名单已公布，请刷新页面查看"
+        }
+
+        # 发送中奖消息
+        goeasy_send_message(channel=f"onOpenLotteryMessage", content=goeasy_content)
         logger.info(f"抽奖 id: {lottery_id}, 开奖成功")
         return create_response(ret=0, data='', message='开奖成功')
 
