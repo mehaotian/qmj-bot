@@ -1,15 +1,12 @@
 from datetime import datetime
 
-import httpx
+from apscheduler.jobstores.base import JobLookupError
+from nonebot import require
 from nonebot.log import logger
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
-from pycparser.ply.yacc import token
-
-from pydantic import BaseModel
-from typing import List
 from enum import IntEnum
 from typing import List, Optional
-from pydantic import BaseModel, Field, HttpUrl, conint, conlist
+from pydantic import BaseModel, Field
 from src.models.prize_model import PrizeTable
 from src.models.user_model import UserTable
 from src.models.lottery_model import LotteryTable
@@ -19,8 +16,14 @@ from src.utils.tools import Lottery
 
 from ..utils.responses import create_response, create_page_response
 from ..utils.security import get_user_data
+from ..utils import scheduler_open_lottery
 
 from ..api import lottery
+
+try:
+    scheduler = require("nonebot_plugin_apscheduler").scheduler
+except Exception:
+    scheduler = None
 
 router = APIRouter()
 
@@ -95,6 +98,11 @@ async def lottery_add(item: LotteryItem, current_user: UserTable = Depends(get_c
             "desc_img": item.desc_img
         }
 
+        # 开奖时间必须大于当前时间
+        open_time = datetime.strptime(item.open_time, "%Y-%m-%d %H:%M")
+        if open_time <= datetime.now():
+            return create_response(ret=1003, message='开奖时间必须大于当前时间')
+
         lotteryData = await LotteryTable.create_lottery(options)
 
         for prize in item.prizes:
@@ -112,6 +120,16 @@ async def lottery_add(item: LotteryItem, current_user: UserTable = Depends(get_c
                 "status": 2
             }
             await PrizeTable.create_prize(prize_data)
+        if scheduler:
+            open_time = datetime.strptime(item.open_time, "%Y-%m-%d %H:%M")
+            scheduler.add_job(
+                scheduler_open_lottery,
+                "date",  # 触发器类型，"date" 表示在指定的时间只执行一次
+                run_date=open_time,  # 开奖时间
+                args=[lotteryData.id, current_user.id],  # 传递给 open_lottery 函数的参数
+                id=f"lottery_{str(lotteryData.id)}",  # 任务 ID，需要确保每个任务的 ID 是唯一的
+            )
+            print('----- 抽奖定时任务添加成功')
 
         return create_response(
             ret=0,
@@ -124,7 +142,6 @@ async def lottery_add(item: LotteryItem, current_user: UserTable = Depends(get_c
     except Exception as e:
         logger.error(f'发布抽奖失败：{e}')
         return create_response(ret=1001, data=str(e), message='发布抽奖失败')
-
 
 @router.get(lottery.get_list.value)
 async def lottery_list(
@@ -393,71 +410,79 @@ async def lottery_open(item: OpenItem, current_user: UserTable = Depends(get_cur
     - 1001: 开奖过程中发生未知错误
     - 1004: 抽奖不存在或用户信息不匹配或抽奖已结束
     """
+    # 关闭定时任务
+    job_id = f"lottery_{str(item.lottery_id)}"
     try:
-        # 验证抽奖信息
-        check_data = await LotteryTable.check_lottery(lottery_id=item.lottery_id)
-        if not check_data:
-            logger.warning(f"尝试开奖的抽奖不存在，lottery_id: {item.lottery_id}")
-            return create_response(ret=1004, message='抽奖不存在')
-
-        if check_data.user_id != current_user.id:
-            logger.warning(f"用户 {current_user.id} 尝试开启不属于自己的抽奖 {item.lottery_id}")
-            return create_response(ret=1004, message='用户信息不匹配')
-
-        if check_data.status == 2:
-            logger.warning(f"尝试开启已结束的抽奖，lottery_id: {item.lottery_id}")
-            return create_response(ret=1004, message='抽奖已结束')
-
-        # 获取参与抽奖的用户列表
-        list_data = await InvolvedLotteryTable.get_list(lottery_id=item.lottery_id)
-        win_info = check_data.win_info or []
-
-        win_info_arrs = [{"name": info, "value": ""} for info in win_info]
-
-        users = list_data['items']
-        users_copy = users.copy()
-
-        # 获取奖品列表
-        prize_data = await PrizeTable.get_list(lottery_id=item.lottery_id)
-
-        # 执行开奖流程
-        for prize in prize_data:
-            lottery_tools = Lottery(users_copy)
-            winners = lottery_tools.draw_winners(num_winners=prize["prize_count"])
-            
-            for winner in winners:
-                for user in users_copy[:]:  # 使用切片创建副本进行迭代
-                    if winner['user_id'] == user['user_id']:
-                        # 创建奖品核销记录
-                        await WriteOffTable.create_write_of({
-                            "lottery_id": item.lottery_id,
-                            "prize_id": prize['id'],
-                            "user_id": winner['user_id'],
-                            "write_off_info": win_info_arrs
-                        })
-                        users_copy.remove(user)
-                        break
-
-            # 更新中奖者状态
-            winner_ids = [winner['user_id'] for winner in winners]
-            await InvolvedLotteryTable.edit_winner_status(
-                lottery_id=item.lottery_id, 
-                winner_ids=winner_ids,
-                prize_id=prize['id']
-            )
-
-        # 更新未中奖者状态
-        await InvolvedLotteryTable.edit_losers_status(lottery_id=item.lottery_id)
-        
-        # 更新抽奖状态为已结束
-        await LotteryTable.filter(id=item.lottery_id).update(status=2)
-
-        logger.info(f"抽奖 id: {item.lottery_id}, 开奖成功")
-        return create_response(ret=0, data='', message='开奖成功')
-
-    except Exception as e:
-        logger.error(f'开奖过程中发生错误：{str(e)}')
-        return create_response(ret=1001, data=str(e), message='开奖失败，请稍后重试')
+        scheduler.remove_job(job_id)
+        print(f"任务 {job_id} 已经停止")
+    except JobLookupError:
+        print(f"任务 {job_id} 已经停止,本次为无效停止")
+    return await scheduler_open_lottery(item.lottery_id, current_user.id)
+    # try:
+    #     # 验证抽奖信息
+    #     check_data = await LotteryTable.check_lottery(lottery_id=item.lottery_id)
+    #     if not check_data:
+    #         logger.warning(f"尝试开奖的抽奖不存在，lottery_id: {item.lottery_id}")
+    #         return create_response(ret=1004, message='抽奖不存在')
+    #
+    #     if check_data.user_id != current_user.id:
+    #         logger.warning(f"用户 {current_user.id} 尝试开启不属于自己的抽奖 {item.lottery_id}")
+    #         return create_response(ret=1004, message='用户信息不匹配')
+    #
+    #     if check_data.status == 2:
+    #         logger.warning(f"尝试开启已结束的抽奖，lottery_id: {item.lottery_id}")
+    #         return create_response(ret=1004, message='抽奖已结束')
+    #
+    #     # 获取参与抽奖的用户列表
+    #     list_data = await InvolvedLotteryTable.get_list(lottery_id=item.lottery_id)
+    #     win_info = check_data.win_info or []
+    #
+    #     win_info_arrs = [{"name": info, "value": ""} for info in win_info]
+    #
+    #     users = list_data['items']
+    #     users_copy = users.copy()
+    #
+    #     # 获取奖品列表
+    #     prize_data = await PrizeTable.get_list(lottery_id=item.lottery_id)
+    #
+    #     # 执行开奖流程
+    #     for prize in prize_data:
+    #         lottery_tools = Lottery(users_copy)
+    #         winners = lottery_tools.draw_winners(num_winners=prize["prize_count"])
+    #
+    #         for winner in winners:
+    #             for user in users_copy[:]:  # 使用切片创建副本进行迭代
+    #                 if winner['user_id'] == user['user_id']:
+    #                     # 创建奖品核销记录
+    #                     await WriteOffTable.create_write_of({
+    #                         "lottery_id": item.lottery_id,
+    #                         "prize_id": prize['id'],
+    #                         "user_id": winner['user_id'],
+    #                         "write_off_info": win_info_arrs
+    #                     })
+    #                     users_copy.remove(user)
+    #                     break
+    #
+    #         # 更新中奖者状态
+    #         winner_ids = [winner['user_id'] for winner in winners]
+    #         await InvolvedLotteryTable.edit_winner_status(
+    #             lottery_id=item.lottery_id,
+    #             winner_ids=winner_ids,
+    #             prize_id=prize['id']
+    #         )
+    #
+    #     # 更新未中奖者状态
+    #     await InvolvedLotteryTable.edit_losers_status(lottery_id=item.lottery_id)
+    #
+    #     # 更新抽奖状态为已结束
+    #     await LotteryTable.filter(id=item.lottery_id).update(status=2)
+    #
+    #     logger.info(f"抽奖 id: {item.lottery_id}, 开奖成功")
+    #     return create_response(ret=0, data='', message='开奖成功')
+    #
+    # except Exception as e:
+    #     logger.error(f'开奖过程中发生错误：{str(e)}')
+    #     return create_response(ret=1001, data=str(e), message='开奖失败，请稍后重试')
 
 
 @router.get(lottery.get_user_list.value)

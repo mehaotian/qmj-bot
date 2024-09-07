@@ -5,6 +5,11 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from nonebot.log import logger
+from nonebot import require, get_driver
+require('nonebot_plugin_apscheduler')
+from nonebot_plugin_apscheduler import scheduler
 from .utils.responses import create_response
 
 from .interface import (
@@ -14,6 +19,9 @@ from .interface import (
     lottery,
     system
 )
+
+config = get_driver().config
+scheduler_db_url = config.scheduler_db_url
 
 app: FastAPI = nonebot.get_app()
 
@@ -48,3 +56,13 @@ app.include_router(lottery.router)
 # app.include_router(system.router)
 
 logger.success('多功能群管WEB面板加载成功')
+
+
+# 定时任务
+try:
+    scheduler.add_jobstore(SQLAlchemyJobStore(
+        url=scheduler_db_url))
+    logger.success('Jobstore 1持久化成功')
+except Exception:
+    logger.error('Jobstore 持久化失败')
+    scheduler = None
