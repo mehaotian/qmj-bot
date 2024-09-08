@@ -9,13 +9,14 @@ def generate_6_digit_uid():
 
 
 class Lottery:
-    def __init__(self, users):
+    def __init__(self, users, open_rule):
         """
         初始化抽奖类，每个用户有预先定义的权重。
         参数:
         users (list): 包含用户信息的字典列表，每个字典有'name'和'weight'键。
         """
         self.users = users
+        self.open_rule = open_rule
 
     def draw_winners(self, num_winners):
         """
@@ -33,14 +34,32 @@ class Lottery:
         for _ in range(num_winners):
             if not candidates:
                 break  # 如果候选用户列表为空，停止抽奖
+            if not self.open_rule or self.open_rule == 0:
+                # 如果开奖规则为0，直接随机选择一个用户
+                winner = random.choice(candidates)
+                winners.append(winner)
+                candidates.remove(winner)
+                continue
 
-            weights = [user['user']['weight'] for user in candidates]
+            # 如果开奖规则为1，按权重随机选择一个用户
+            if self.open_rule == 1:
+                weights = [user['user']['weight'] for user in candidates]
+                print('权重开奖', weights)
+                # 使用 random.choices 按权重随机选择一个用户
+                winner = random.choices(candidates, weights=weights, k=1)[0]
+                winners.append(winner)
+                candidates.remove(winner)
 
             # 使用 random.choices 按权重随机选择一个用户
-            winner = random.choices(candidates, weights=weights, k=1)[0]
-            winners.append(winner)
+            # winner = random.choices(candidates, weights=weights, k=1)[0]
+            # winners.append(winner)
+            # # 从候选用户列表中移除中奖用户
+            # candidates.remove(winner)
 
-            # 从候选用户列表中移除中奖用户
-            candidates.remove(winner)
+        # # 找到中奖用户并降低权重
+        # for user in self.users:
+        #     if user['user']['user_id'] == winner['user']['user_id']:
+        #         user['user']['weight'] = max(10, user['user']['weight'] * 0.9)  # 将权重乘以 0.9，但不低于 10
+        #         break
 
         return winners

@@ -5,7 +5,7 @@
 @description: 用户表
 """
 import uuid
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from typing import Dict, Any, List
 
 from tortoise import fields
@@ -116,3 +116,15 @@ class UserTable(Model):
 
         await user.save(update_fields=["weight"])
         return user
+
+    @classmethod
+    async def edit_user_weight(cls,  user_id: int, weight: int):
+        """
+        修改用户权重
+        """
+        current_time = datetime.now()
+        print('----- 修改用户权重', user_id, weight)
+        # 修改中奖者状态
+        await cls.filter(id=user_id).update(weight=weight, update_time=current_time)
+
+        return True

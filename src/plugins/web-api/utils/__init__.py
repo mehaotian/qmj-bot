@@ -2,6 +2,7 @@ from nonebot import logger
 
 from src.models.involved_lottery_model import InvolvedLotteryTable
 from src.models.lottery_model import LotteryTable
+from src.models.user_model import UserTable
 from src.models.prize_model import PrizeTable
 from src.models.write_off_model import WriteOffTable
 from src.utils.tools import Lottery
@@ -46,7 +47,7 @@ async def scheduler_open_lottery(lottery_id: int, user_id: int):
 
         # 执行开奖流程
         for prize in prize_data:
-            lottery_tools = Lottery(users_copy)
+            lottery_tools = Lottery(users_copy, check_data.open_rule)
             winners = lottery_tools.draw_winners(num_winners=prize["prize_count"])
 
             for winner in winners:
@@ -59,6 +60,9 @@ async def scheduler_open_lottery(lottery_id: int, user_id: int):
                             "user_id": winner['user_id'],
                             "write_off_info": win_info_arrs
                         })
+                        print(user)
+                        # 修改中奖者权重
+                        await  UserTable.edit_user_weight(user['user_id'], max(10, user['user']['weight'] * 0.9))
                         users_copy.remove(user)
                         break
 

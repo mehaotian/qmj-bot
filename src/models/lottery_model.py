@@ -31,14 +31,18 @@ class LotteryTable(Model):
     open_time = fields.DatetimeField(null=True)
     # 开奖人数
     open_num = fields.IntField(default=0)
-    # 抽奖状态 1: 进行中 2:已结束
-    status = fields.IntField(default=1)
+    # 开奖规则 0: 完全随机 1: 减少多次中奖者概率
+    open_rule = fields.IntField(default=0)
+    # 参与限制 0: 无限制  1: 限制分享
+    join_limit = fields.IntField(default=0)
     # 中奖信息 []
     win_info = fields.JSONField(default=[])
     # 抽奖描述
     desc = fields.CharField(max_length=255, default="")
     # 描述图片 例子 ['lottery/1.jpg', 'https://lottery/2.jpg']
     desc_img = fields.JSONField(default=[])
+    # 抽奖状态 1: 进行中 2:已结束
+    status = fields.IntField(default=1)
     # 创建时间
     create_time = fields.DatetimeField(auto_now_add=True)
     # 更新时间

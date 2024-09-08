@@ -26,6 +26,7 @@ except Exception:
 
 router = APIRouter()
 
+
 # 抽离的用户验证函数
 async def get_current_user(token: str = Header(None)):
     if not token:
@@ -38,12 +39,14 @@ async def get_current_user(token: str = Header(None)):
         raise HTTPException(status_code=404, message="用户不存在")
     return user_data
 
+
 # 抽离的抽奖验证函数
 async def verify_lottery(lottery_id: int):
     lottery = await LotteryTable.check_lottery(lottery_id=lottery_id)
     if not lottery:
         raise HTTPException(status_code=404, detail="抽奖不存在")
     return lottery
+
 
 class PrizeType(IntEnum):
     PRIZE = 1
@@ -52,15 +55,18 @@ class PrizeType(IntEnum):
     VOUCHER = 4
     REDEMPTION_CODE = 5
 
+
 class PrizeItem(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, description="奖品名称")
     img_url: str = Field(..., description="奖品图片URL")
     prize_type: PrizeType = Field(..., description="奖品类型")
     prize_count: int = Field(..., gt=0, description="奖品份数")
 
+
 class OpenType(IntEnum):
     BY_NUMBER = 1
     BY_TIME = 2
+
 
 class LotteryItem(BaseModel):
     user_id: int = Field(..., gt=0, description="发布者user_id")
@@ -71,6 +77,8 @@ class LotteryItem(BaseModel):
     desc: Optional[str] = Field(None, max_length=500, description="抽奖描述（非必填）")
     desc_img: List[str] = Field(default=[], max_items=5, description="描述图片")
     prizes: List[PrizeItem] = Field(..., min_items=1, max_items=10, description="奖品列表")
+    open_rule: int = Field(0, description="开奖规则 0: 完全随机 1: 减少多次中奖者概率")
+    join_limit: int = Field(0, description="参与限制 0: 无限制  1: 限制分享")
 
 
 @router.post(lottery.add.value)
@@ -94,7 +102,9 @@ async def lottery_add(item: LotteryItem, current_user: UserTable = Depends(get_c
             "open_num": item.open_num,
             "desc": item.desc,
             "win_info": item.win_info or [],
-            "desc_img": item.desc_img
+            "desc_img": item.desc_img,
+            "open_rule": item.open_rule,
+            "join_limit": item.join_limit,
         }
 
         # 开奖时间必须大于当前时间
@@ -147,11 +157,12 @@ async def lottery_add(item: LotteryItem, current_user: UserTable = Depends(get_c
         logger.error(f'发布抽奖失败：{e}')
         return create_response(ret=1001, data=str(e), message='发布抽奖失败')
 
+
 @router.get(lottery.get_list.value)
 async def lottery_list(
-    page: int = Query(1, ge=1, description="页码，默认为1"),
-    limit: int = Query(10, ge=1, le=100, description="每页数量，默认为10，最大100"),
-    status: Optional[int] = Query(0, ge=0, le=2, description="抽奖状态：0-全部，1-进行中，2-已结束")
+        page: int = Query(1, ge=1, description="页码，默认为1"),
+        limit: int = Query(10, ge=1, le=100, description="每页数量，默认为10，最大100"),
+        status: Optional[int] = Query(0, ge=0, le=2, description="抽奖状态：0-全部，1-进行中，2-已结束")
 ):
     """
     获取抽奖列表
@@ -172,10 +183,10 @@ async def lottery_list(
             return create_response(ret=0, data=[], message='暂无抽奖数据')
 
         return create_page_response(
-            ret=0, 
-            data=list_data['items'], 
-            total=list_data['total'], 
-            page=page, 
+            ret=0,
+            data=list_data['items'],
+            total=list_data['total'],
+            page=page,
             limit=limit,
             message='获取抽奖列表成功'
         )
@@ -188,13 +199,12 @@ async def lottery_list(
         return create_response(ret=1001, message='获取抽奖列表失败，请稍后重试')
 
 
-
 @router.get(lottery.get_my_list.value)
 async def lottery_my_list(
-    page: int = Query(1, ge=1, description="页码，默认为1"),
-    limit: int = Query(10, ge=1, le=100, description="每页数量，默认为10，最大100"),
-    status: Optional[int] = Query(0, ge=0, le=2, description="抽奖状态：0-全部，1-进行中，2-已结束"),
-    user: UserTable = Depends(get_current_user)
+        page: int = Query(1, ge=1, description="页码，默认为1"),
+        limit: int = Query(10, ge=1, le=100, description="每页数量，默认为10，最大100"),
+        status: Optional[int] = Query(0, ge=0, le=2, description="抽奖状态：0-全部，1-进行中，2-已结束"),
+        user: UserTable = Depends(get_current_user)
 ):
     """
     获取当前用户的抽奖列表
@@ -211,10 +221,10 @@ async def lottery_my_list(
     """
     try:
         user_id = user.id
-        
+
         list_data = await LotteryTable.get_list(
-            page=page, 
-            limit=limit, 
+            page=page,
+            limit=limit,
             status=status if status != 0 else None,
             user_id=user_id
         )
@@ -223,10 +233,10 @@ async def lottery_my_list(
             return create_response(ret=0, data=[], message='暂无抽奖数据')
 
         return create_page_response(
-            ret=0, 
-            data=list_data['items'], 
-            total=list_data['total'], 
-            page=page, 
+            ret=0,
+            data=list_data['items'],
+            total=list_data['total'],
+            page=page,
             limit=limit,
             message='获取用户抽奖列表成功'
         )
@@ -237,7 +247,6 @@ async def lottery_my_list(
     except Exception as e:
         logger.error(f'获取用户抽奖列表失败：{e}')
         return create_response(ret=1001, message='获取用户抽奖列表失败，请稍后重试')
-   
 
 
 @router.get(lottery.get_prize_list.value)
@@ -291,7 +300,6 @@ async def lottery_detail(lottery_id: int = Query(..., gt=0, description="抽奖I
         if not lottery_data:
             return create_response(ret=1004, message='抽奖不存在')
 
-
         # 如果超过开奖时间，直接开奖
         open_time = lottery_data['open_time']
         now_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -299,7 +307,6 @@ async def lottery_detail(lottery_id: int = Query(..., gt=0, description="抽奖I
             await scheduler_open_lottery(lottery_id, lottery_data['user_id'])
             logger.info(f"抽奖 {lottery_id} 已超过开奖时间，立即开奖")
             lottery_data = await LotteryTable.get_detail(lottery_id=lottery_id)
-
 
         return create_response(ret=0, data=lottery_data, message='获取抽奖详情成功')
 
@@ -313,6 +320,7 @@ async def lottery_detail(lottery_id: int = Query(..., gt=0, description="抽奖I
 
 class JoinItem(BaseModel):
     lottery_id: int = Field(..., gt=0, description="抽奖ID")
+
 
 @router.post(lottery.join.value)
 async def lottery_join(item: JoinItem, current_user: UserTable = Depends(get_current_user)):
@@ -362,7 +370,7 @@ async def lottery_join(item: JoinItem, current_user: UserTable = Depends(get_cur
                 logger.info(f"抽奖 {item.lottery_id} 已满足开奖条件，立即开奖")
 
         return create_response(ret=0, data={"join_id": join_data.id}, message='参与抽奖成功')
-    
+
     except Exception as e:
         logger.error(f'参与抽奖时发生未预期的错误：{str(e)}')
         return create_response(ret=1001, message='参与抽奖失败，请稍后重试')
@@ -399,11 +407,11 @@ async def lottery_user_list(lottery_id: int):
             return create_page_response(ret=0, data=[], page=1, limit=0, total=0, message='暂无参与用户')
 
         return create_page_response(
-            ret=0, 
-            data=list_data['items'], 
-            page=1, 
+            ret=0,
+            data=list_data['items'],
+            page=1,
             limit=len(list_data['items']),
-            total=list_data['total'], 
+            total=list_data['total'],
             message='获取抽奖参与用户列表成功'
         )
     except Exception as e:
@@ -523,14 +531,14 @@ async def lottery_user_list(lottery_id: int, current_user: UserTable = Depends(g
     try:
         if lottery_id <= 0:
             return create_response(ret=1003, message='无效的抽奖ID')
-        
+
         user_list = await WriteOffTable.get_user_list(lottery_id=lottery_id)
-        
+
         if not user_list:
             return create_response(ret=0, data=[], message='该抽奖活动暂无中奖用户')
-        
+
         return create_response(ret=0, data=user_list, message='获取抽奖中奖用户列表成功')
-    
+
     except Exception as e:
         logger.error(f"获取中奖名单时发生错误: {str(e)}")
         return create_response(ret=1001, message='获取中奖名单失败，请稍后重试')
@@ -555,23 +563,23 @@ async def lottery_submit_winner_info(item: WinnerItem, current_user: UserTable =
     - 失败: 返回错误信息
     """
     try:
-        
+
         if not item.write_off_id or item.write_off_id <= 0:
             return create_response(ret=1003, message='无效的核销ID')
-        
+
         if not item.info or not isinstance(item.info, list):
             return create_response(ret=1004, message='无效的中奖信息格式')
-        
+
         # 检查核销记录是否存在
         write_off_record = await WriteOffTable.get_or_none(id=item.write_off_id)
         if not write_off_record:
             return create_response(ret=1005, message='核销记录不存在')
-        
+
         user_list = await WriteOffTable.add_write_off_info(write_off_id=item.write_off_id, write_off_info=item.info)
-        
+
         if not user_list:
             return create_response(ret=1006, message='更新中奖信息失败')
-        
+
         return create_response(ret=0, data=user_list, message='用户中奖信息修改成功')
     except Exception as e:
         logger.error(f'提交中奖信息失败：{str(e)}')
@@ -579,8 +587,8 @@ async def lottery_submit_winner_info(item: WinnerItem, current_user: UserTable =
 
 
 @router.get(lottery.get_write_off_list.value)
-async def lottery_write_off_list(lottery_id: int = Query(..., gt=0, description="抽奖ID"), 
-                                current_user: UserTable = Depends(get_current_user)):
+async def lottery_write_off_list(lottery_id: int = Query(..., gt=0, description="抽奖ID"),
+                                 current_user: UserTable = Depends(get_current_user)):
     """
     获取指定抽奖活动的核销名单
 
@@ -597,12 +605,12 @@ async def lottery_write_off_list(lottery_id: int = Query(..., gt=0, description=
         lottery = await LotteryTable.get_or_none(id=lottery_id)
         if not lottery:
             return create_response(ret=1004, message='抽奖活动不存在')
-        
+
         user_list = await WriteOffTable.get_write_off_list(lottery_id=lottery_id)
-        
+
         if user_list is None:
             return create_response(ret=1005, message='获取核销名单失败')
-        
+
         return create_response(ret=0, data=user_list, message='获取核销名单成功')
     except Exception as e:
         logger.error(f"获取核销名单时发生错误: {str(e)}")
@@ -630,16 +638,16 @@ async def lottery_edit_write_off_status(item: WriteOffItem, token: str = Header(
     try:
         if not token:
             return create_response(ret=1002, message='用户未登录')
-        
+
         user = get_user_data(token)
         if not user:
             return create_response(ret=1003, message='无效的用户 Token')
-        
+
         openid = user.get('openid')
         user_data = await UserTable.check_user(openid=openid)
         if not user_data:
             return create_response(ret=1004, message='用户不存在')
-        
+
         # user_id = user_data.id
         write_off_id = item.write_off_id
         status = item.status
@@ -696,28 +704,28 @@ async def lottery_winner_list(item: WinnerItem, token: str = Header(None)):
         # 验证用户token
         if not token:
             return create_response(ret=1002, message='用户Token不存在')
-        
+
         user = get_user_data(token)
         if not user or 'openid' not in user:
             return create_response(ret=1003, message='无效的用户Token')
-        
+
         openid = user['openid']
         user_data = await UserTable.check_user(openid=openid)
         if not user_data:
             return create_response(ret=1004, message='用户不存在')
-        
+
         # 验证抽奖是否存在
         check_data = await LotteryTable.check_lottery(lottery_id=item.lottery_id)
         if not check_data:
             return create_response(ret=1005, message='抽奖不存在')
-        
+
         # 获取中奖用户列表
         list_data = await InvolvedLotteryTable.get_winners_list(lottery_id=item.lottery_id)
-        
+
         # 检查是否有中奖用户
         if not list_data:
             return create_response(ret=0, data=[], message='该抽奖暂无中奖用户')
-        
+
         return create_response(ret=0, data=list_data, message='获取抽奖中奖用户列表成功')
     except Exception as e:
         logger.error(f'获取抽奖中奖用户列表失败：{str(e)}')
