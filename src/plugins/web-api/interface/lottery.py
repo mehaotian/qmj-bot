@@ -30,13 +30,13 @@ router = APIRouter()
 # 抽离的用户验证函数
 async def get_current_user(token: str = Header(None)):
     if not token:
-        raise HTTPException(status_code=400, message="用户未登录")
+        raise HTTPException(status_code=400, detail="用户未登录")
     user = get_user_data(token)
     if not user or 'openid' not in user:
-        raise HTTPException(status_code=400, message="用户未登录，或登录过期")
+        raise HTTPException(status_code=400, detail="用户未登录，或登录过期")
     user_data = await UserTable.check_user(openid=user['openid'])
     if not user_data:
-        raise HTTPException(status_code=404, message="用户不存在")
+        raise HTTPException(status_code=404, detail="用户不存在")
     return user_data
 
 
