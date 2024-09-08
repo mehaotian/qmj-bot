@@ -145,3 +145,10 @@ class InvolvedLotteryTable(Model):
             result.append(item_dict)
 
         return result
+
+    @classmethod
+    async def get_join_count(cls, lottery_id: int):
+        """
+        获取参与抽奖人数
+        """
+        return await cls.filter(lottery_id=lottery_id).count()

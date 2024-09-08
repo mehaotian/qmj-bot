@@ -25,7 +25,7 @@ class LotteryTable(Model):
     user = fields.ForeignKeyField("default.UserTable", related_name="lottery", on_delete=fields.CASCADE)
     # 抽奖类型 1: 普通抽奖 2: 兑换码
     lottery_type = fields.IntField(default=1)
-    # 开奖类型 1: 按人数开奖 2: 按时间开奖
+    # 开奖类型 1: 按时间开奖 2: 按人数开奖
     open_type = fields.IntField(default=1)
     # 开奖时间 ，如果type 为 1 , 未满足时按开奖时间
     open_time = fields.DatetimeField(null=True)

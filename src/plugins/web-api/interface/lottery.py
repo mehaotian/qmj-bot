@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from apscheduler.jobstores.base import JobLookupError
 from nonebot import require
@@ -64,7 +64,7 @@ class OpenType(IntEnum):
 
 class LotteryItem(BaseModel):
     user_id: int = Field(..., gt=0, description="发布者user_id")
-    open_type: OpenType = Field(..., description="开奖类型")
+    open_type: OpenType = Field(..., description="开奖类型,1:按时间开奖,2: 按人数开奖")
     open_time: str = Field(..., description="开奖时间，如果type为1，未满足时按开奖时间")
     open_num: int = Field(..., gt=0, description="开奖人数")
     win_info: List[str] = Field(default=[], description="中奖信息")
@@ -291,6 +291,16 @@ async def lottery_detail(lottery_id: int = Query(..., gt=0, description="抽奖I
         if not lottery_data:
             return create_response(ret=1004, message='抽奖不存在')
 
+
+        # 如果超过开奖时间，直接开奖
+        open_time = lottery_data['open_time']
+        now_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        if lottery_data['status'] == 1 and open_time <= now_time:
+            await scheduler_open_lottery(lottery_id, lottery_data['user_id'])
+            logger.info(f"抽奖 {lottery_id} 已超过开奖时间，立即开奖")
+            lottery_data = await LotteryTable.get_detail(lottery_id=lottery_id)
+
+
         return create_response(ret=0, data=lottery_data, message='获取抽奖详情成功')
 
     except ValueError as ve:
@@ -322,12 +332,12 @@ async def lottery_join(item: JoinItem, current_user: UserTable = Depends(get_cur
     - 1001: 其他未预期的错误
     """
     try:
-        lottery = await LotteryTable.check_lottery(lottery_id=item.lottery_id)
-        if not lottery:
+        lottery_data = await LotteryTable.check_lottery(lottery_id=item.lottery_id)
+        if not lottery_data:
             logger.warning(f"抽奖不存在，lottery_id: {item.lottery_id}")
             return create_response(ret=1004, message='抽奖不存在')
 
-        if lottery.status == 2:
+        if lottery_data.status == 2:
             logger.info(f"尝试参与已结束的抽奖，lottery_id: {item.lottery_id}")
             return create_response(ret=1004, message='抽奖已结束')
 
@@ -343,6 +353,14 @@ async def lottery_join(item: JoinItem, current_user: UserTable = Depends(get_cur
         })
 
         logger.info(f"用户成功参与抽奖，user_id: {current_user.id}, lottery_id: {item.lottery_id}")
+
+        # 如果是按人数开奖，判断是否满足开奖条件
+        if lottery_data.open_type == 2:
+            join_count = await InvolvedLotteryTable.get_join_count(item.lottery_id)
+            if join_count >= lottery_data.open_num:
+                await scheduler_open_lottery(item.lottery_id, lottery_data.user_id)
+                logger.info(f"抽奖 {item.lottery_id} 已满足开奖条件，立即开奖")
+
         return create_response(ret=0, data={"join_id": join_data.id}, message='参与抽奖成功')
     
     except Exception as e:
