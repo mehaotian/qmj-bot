@@ -8,8 +8,6 @@ from tortoise import fields
 from tortoise.models import Model
 from typing import Dict, List, Optional
 from datetime import datetime
-
-from src.models import MemcacheClient
 from src.models.prize_model import PrizeTable
 from src.models.user_model import UserTable
 from nonebot import get_driver, logger

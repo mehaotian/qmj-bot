@@ -55,6 +55,21 @@ class lottery(Enum):
     # 提交中奖信息
     submit_winner_info = f"{api}/submit_winner_info"
 
+
+class team(Enum):
+    """
+    团队接口
+    """
+    # 接口前缀
+    api = "/api/team"
+    # 创建团队
+    add = f"{api}/add"
+    # 获取团队列表
+    get_list = f"{api}/list"
+    # 获取团队详情
+    get_detail = f"{api}/detail"
+
+
 class upload(Enum):
     """
     上传接口

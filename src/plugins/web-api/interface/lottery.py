@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 from apscheduler.jobstores.base import JobLookupError
 from nonebot import require
