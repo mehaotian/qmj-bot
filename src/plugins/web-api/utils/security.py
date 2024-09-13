@@ -1,6 +1,4 @@
 from typing import Union
-from fastapi.security import OAuth2PasswordBearer
-
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 

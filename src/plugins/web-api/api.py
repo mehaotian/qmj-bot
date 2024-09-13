@@ -76,3 +76,15 @@ class upload(Enum):
     """
     # 接口前缀
     api = "/api/upload"
+
+
+
+class admin(Enum):
+    """
+    管理员接口
+    """
+    # 接口前缀
+    api = "/admin"
+    register = f"{api}/auth/register"
+    login = f"{api}/auth/login"
+    userinfo = f"{api}/user/info"
