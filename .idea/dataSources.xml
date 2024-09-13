@@ -9,5 +9,12 @@
       <jdbc-url>jdbc:postgresql://artifind.art:5432/miaojidb_dev</jdbc-url>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
+    <data-source source="LOCAL" name="喵叽redis" uuid="b6237a55-6092-49ee-990e-00d0bb0ce00d">
+      <driver-ref>redis</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>jdbc.RedisDriver</jdbc-driver>
+      <jdbc-url>jdbc:redis://cloud.sealos.io:31652</jdbc-url>
+      <working-dir>$ProjectFileDir$</working-dir>
+    </data-source>
   </component>
 </project>

@@ -87,4 +87,5 @@ class admin(Enum):
     api = "/admin"
     register = f"{api}/auth/register"
     login = f"{api}/auth/login"
+    logout = f"{api}/auth/logout"
     userinfo = f"{api}/user/info"

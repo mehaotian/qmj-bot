@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from nonebot.log import logger
 from fastapi import APIRouter, Header, HTTPException
 from pycparser.ply.yacc import token
@@ -112,7 +114,17 @@ async def get_user_info(authorization: str = Header(None)):
     """
     获取用户信息
     """
+
+
     token_data = await get_current_user(authorization)
+    if not token_data:
+        return create_response(ret=1001, message='用户不存在')
+
+    print(token_data.exp , datetime.now().timestamp() ,token_data.exp < datetime.now().timestamp())
+    # 登录过期
+    if token_data.exp < datetime.now().timestamp():
+        raise HTTPException(status_code=401, detail="用户未登录，或登录过期")
+
 
     user_id = token_data.user_id
     username = token_data.username
@@ -122,3 +134,10 @@ async def get_user_info(authorization: str = Header(None)):
         return create_response(ret=1001, message='用户不存在')
 
     return create_response(ret=0, data=user, message='获取用户信息成功')
+
+@router.post(admin.logout.value)
+async def admin_logout():
+    """
+    退出登录
+    """
+    return create_response(ret=0, message='退出登录成功')

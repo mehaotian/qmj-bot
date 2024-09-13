@@ -33,7 +33,7 @@ async def get_current_user(token: str = Header(None)):
         raise HTTPException(status_code=400, detail="用户未登录")
     user = get_user_data(token)
     if not user or 'openid' not in user:
-        raise HTTPException(status_code=400, detail="用户未登录，或登录过期")
+        raise HTTPException(status_code=401, detail="用户未登录，或登录过期")
     user_data = await UserTable.check_user(openid=user['openid'])
     if not user_data:
         raise HTTPException(status_code=404, detail="用户不存在")

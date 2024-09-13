@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from passlib.context import CryptContext
 from datetime import datetime, timedelta
 # from app.models.user import User
-from jose import JWTError, jwt
+from jose import JWTError, jwt, ExpiredSignatureError
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -29,6 +29,7 @@ class TokenData(BaseModel):
     """令牌数据"""
     username: Union[str, None] = None
     user_id: Union[int, None] = None
+    exp: Union[int, None] = None
 
 
 def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None):
@@ -81,19 +82,24 @@ def get_user_data(user):
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     """获取当前用户"""
-    # try:
-    if not token.startswith("Bearer "):
-        raise HTTPException(status_code=400, detail="无效的授权头部")
+    try:
+        if not token.startswith("Bearer "):
+            raise HTTPException(status_code=400, detail="无效的授权头部")
 
-    token = token[len("Bearer "):]  # 去掉 Bearer 前缀
-    payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    username: str = payload.get("sub")
-    user_id: int = payload.get("user_id")
-    if username is None:
-        raise HTTPException(status_code=400, detail="未找到用户")
-    return TokenData(username=username,user_id=user_id)
-    # except JWTError:
-    #     raise HTTPException(status_code=400, detail="未找到用户")
+        token = token[len("Bearer "):]  # 去掉 Bearer 前缀
+
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        user_id: int = payload.get("user_id")
+        exp: int = payload.get("exp")
+        print(payload)
+        if username is None:
+            raise HTTPException(status_code=400, detail="未找到用户")
+        return TokenData(username=username,user_id=user_id,exp=exp)
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="登录过期")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="无效的凭证")
 
 # async def get_current_user(token: str = Depends(oauth2_scheme)):
 #     """获取当前用户"""
