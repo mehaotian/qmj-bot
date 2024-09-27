@@ -1,7 +1,5 @@
 from datetime import datetime
-
-from apscheduler.jobstores.base import JobLookupError
-from click import option
+from typing import List, Optional
 from nonebot import require
 from nonebot.log import logger
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
@@ -12,7 +10,6 @@ from pydantic import BaseModel, Field
 
 from ..utils.responses import create_response, create_page_response
 from ..utils.security import get_user_data
-from ..utils import scheduler_open_lottery
 
 from ..api import team
 
@@ -38,16 +35,16 @@ async def get_current_user(token: str = Header(None)):
 
 
 class AddTeamItem(BaseModel):
-    name = Field(..., title="团队名称")
-    current_num = Field(..., title="当前队伍人数")
-    need_num = Field(..., title="需要等位多少人")
-    time_limit = Field(..., title="组队时限")
-    nature = Field(..., title="组队性质")
-    team_info = Field(..., title="组队要求")
-    start_time = Field(..., title="开始时间")
-    end_time = Field(..., title="结束时间")
-    desc = Field(..., title="组队描述")
-    desc_img = Field(..., title="描述图片")
+    name: str = Field(..., title="团队名称")
+    current_num: int = Field(..., title="当前队伍人数")
+    need_num: int = Field(..., title="需要等位多少人")
+    time_limit: str = Field(..., title="组队时限")
+    nature: str = Field(..., title="组队性质")
+    team_info: str = Field(..., title="组队要求")
+    start_time: str = Field(..., title="开始时间")
+    end_time: str = Field(..., title="结束时间")
+    desc: Optional[str] = Field(..., title="组队描述")
+    desc_img:  List[str] = Field(..., title="描述图片")
 
 
 @router.post(team.add.value)

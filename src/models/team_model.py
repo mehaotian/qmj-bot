@@ -20,7 +20,7 @@ class TeamTable(Model):
     # 自增 ID (Primary key)
     id = fields.IntField(pk=True, generated=True)
     # 发布用户
-    user = fields.ForeignKeyField("default.UserTable", related_name="lottery", on_delete=fields.CASCADE)
+    user = fields.ForeignKeyField("default.UserTable", related_name="teamUser", on_delete=fields.CASCADE)
     # 组队名称
     name = fields.CharField(max_length=255, default="")
     # 当前队伍人数
@@ -45,6 +45,7 @@ class TeamTable(Model):
     desc_img = fields.JSONField(default=[])
     # 组队状态 1: 进行中 2:未开始 3:已结束
     status = fields.IntField(default=1)
+
     # 创建时间
     create_time = fields.DatetimeField(auto_now_add=True)
     # 更新时间

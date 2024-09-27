@@ -29,6 +29,9 @@ def init_models():
     # 核销表
     add_model("src.models.write_off_model")
 
+    # --- 组队 ---
+    add_model("src.models.team_model")
+
     # --- 管理员 ---
     # 添加管理员用户模型
     add_model("src.models.admin_user_model")

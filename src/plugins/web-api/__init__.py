@@ -19,6 +19,7 @@ from .interface import (
     user,
     upload,
     lottery,
+    team,
     admin,
     system
 )
@@ -63,6 +64,9 @@ app.include_router(upload.router)
 
 # 抽奖相关接口
 app.include_router(lottery.router)
+
+# 组队相关接口
+app.include_router(team.router)
 
 # # 系统相关
 # app.include_router(system.router)
