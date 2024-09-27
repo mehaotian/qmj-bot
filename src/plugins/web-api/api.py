@@ -89,3 +89,11 @@ class admin(Enum):
     login = f"{api}/auth/login"
     logout = f"{api}/auth/logout"
     userinfo = f"{api}/user/info"
+
+class xhh(Enum):
+    """
+    小黑盒相关接口
+    """
+    # 接口前缀
+    api = "/xhh"
+    game = f"{api}/game"

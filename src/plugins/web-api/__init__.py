@@ -21,6 +21,7 @@ from .interface import (
     lottery,
     team,
     admin,
+    xhh,
     system
 )
 
@@ -36,7 +37,6 @@ app.add_middleware(
     allow_methods=["*"],  # 允许所有方法
     allow_headers=["*"],  # 允许所有头
 )
-
 
 
 @app.exception_handler(RequestValidationError)
@@ -73,6 +73,9 @@ app.include_router(team.router)
 
 # admin 接口
 app.include_router(admin.router)
+
+# 小黑盒接口
+app.include_router(xhh.router)
 
 logger.success('多功能群管WEB面板加载成功')
 
