@@ -20,10 +20,8 @@ class UserTable(Model):
     id = fields.IntField(pk=True, generated=True)
     # 用户唯一标识
     openid = fields.CharField(max_length=255, default="")
-    # 用户 token
-    token = fields.CharField(max_length=255, default="")
     # 用户 ID ，使用str ，int容易超过范围
-    user_id = fields.CharField(max_length=255, default="")
+    qq_id = fields.CharField(max_length=255, default="")
     # 群组 ID ，使用str ，int容易超过范围
     group_id = fields.CharField(max_length=255, default="")
     # 昵称
