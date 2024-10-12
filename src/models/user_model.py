@@ -45,11 +45,11 @@ class UserTable(Model):
         table_description = "用户表"  # 可选
 
     @classmethod
-    async def create_user(cls, openid: str, token: str):
+    async def create_user(cls, openid: str):
         """
         创建用户
         """
-        user = cls(openid=openid, token=token)
+        user = cls(openid=openid)
         await user.save()
         return user
 
@@ -61,35 +61,43 @@ class UserTable(Model):
         return await cls.get_or_none(openid=openid)
 
     @classmethod
-    async def update_token(cls, openid: str, token: str):
+    async def update_openid(cls, user_id: str,openid: str):
         """
         更新用户 token ，并返回用户
         """
-        user = await cls.filter(openid=openid).first()
-        user.token = token
-        await user.save(update_fields=["token"])
+        user = await cls.filter(id=user_id).first()
+        user.openid = openid
+        await user.save(update_fields=["openid"])
         return user
 
     @classmethod
-    async def update_user(cls, openid: str, **kwargs):
+    async def update_user(cls, user_id:str='',openid: str='', **kwargs):
         """
         更新用户信息
         """
-        user = await cls.filter(openid=openid).first()
+        user = await cls.get(id=user_id)
+
+        print('----- 更新用户信息', user, kwargs)
         update_fields = []
         for key, value in kwargs.items():
             setattr(user, key, value)
             update_fields.append(key)
+
+        # 如果存在openid 则更新
+        if openid:
+            user.openid = openid
+            update_fields.append('openid')
         await user.save(update_fields=update_fields)
 
         # 获取用户信息，不返回token 和 openid ,讲时间转为 2024-01-01 12:11:12 格式
-        user = await cls.filter(openid=openid).first()
-        user_dict = {k: v for k, v in user.__dict__.items() if not k.startswith('_')}
-        user_dict.pop('token')
-        user_dict.pop('openid')
-        user_dict['create_time'] = user_dict['create_time'].strftime('%Y-%m-%d %H:%M:%S')
-        user_dict['update_time'] = user_dict['update_time'].strftime('%Y-%m-%d %H:%M:%S')
-        return user_dict
+        user = await cls.get(id=user_id)
+        if user:
+            user_dict = {k: v for k, v in user.__dict__.items() if not k.startswith('_')}
+            user_dict.pop('openid')
+            user_dict['create_time'] = user_dict['create_time'].strftime('%Y-%m-%d %H:%M:%S')
+            user_dict['update_time'] = user_dict['update_time'].strftime('%Y-%m-%d %H:%M:%S')
+            return user_dict
+        return {}
 
     @classmethod
     async def get_users_by_ids(cls, user_ids: List[int]) -> Dict[int, Dict[str, Any]]:

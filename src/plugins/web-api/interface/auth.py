@@ -3,9 +3,10 @@ import time
 
 import httpx
 from nonebot.log import logger
-from fastapi import APIRouter, Header
+from fastapi import APIRouter, Header,Query
 from pydantic import BaseModel
 from Crypto.Cipher import AES
+
 # 获取配置信息
 from src.config import global_config
 
@@ -49,25 +50,23 @@ async def qq_auth(item: QQAuth):
             jsondata = None
 
         if jsondata:
-            print(jsondata)
             openid = jsondata['openid']
             session_key = jsondata['session_key']
-            token_data = get_token_data(openid=openid, session_key=session_key)
-            token = token_data['token']
+
             try:
                 have_user = await UserTable.check_user(openid=openid)
+
+                if not have_user:
+                    user = await UserTable.create_user(openid=openid)
+                else:
+                    user = await UserTable.update_user(openid=openid,user_id=have_user.id)
+                token_data = get_token_data(user_id=user.get("id"),session_key=session_key)
+                token = token_data['token']
+
                 user_data = {
                     "token": token
                 }
-                if not have_user:
-                    user = await UserTable.create_user(openid=openid, token=token)
-                    print('创建用户成功')
-                else:
-                    user = await UserTable.update_token(openid=openid, token=token)
-                    print('更新用户成功')
-
-                user_data.update({"id": user.id})
-
+                user_data.update({"id": user.get("id")})
                 return create_response(data=user_data, message='success')
             except Exception as e:
                 logger.error(f'创建用户失败：{e}')
@@ -91,7 +90,7 @@ async def loign(item: UserItem, token: str = Header(None)):
     if not token:
         return create_response(ret=1002, message='用户未登录')
     user = get_user_data(token)
-    openid = user.get('openid')
+    user_id = user.get('user_id')
     session_key = user.get('session_key')
 
     if check_signature(item.rawData, session_key, item.signature):
@@ -103,18 +102,13 @@ async def loign(item: UserItem, token: str = Header(None)):
 
         # 验证用户是否存在
         # 这里主要是解决用户信息更新问题，有可能存储的token是错误的，但是仍然走有token的登录，这时候要更新
-        have_user = await UserTable.check_user(openid=openid)
+        user_data = await UserTable.get(id=user_id)
 
-        if not have_user:
-            await UserTable.create_user(openid=openid, token=token)
-        else:
-            # await UserTable.update_token(openid=openid, token=token)
-            user = await UserTable.update_user(
-                openid=openid,
-                token=token,
-                nickname=user_info.get('nickName'),
-                avatar=user_info.get('avatarUrl'),
-            )
+        user = await UserTable.update_user(
+            user_id=user_data.id,
+            nickname=user_info.get('nickName'),
+            avatar=user_info.get('avatarUrl'),
+        )
         return create_response(data=user, message='success')
     else:
         logger.error("数据签名验证失败")
@@ -137,8 +131,7 @@ async def logout(token: str = Header(None)):
         return create_response(ret=1001, message='用户不存在')
     else:
         user = await UserTable.update_user(
-            openid=openid,
-            token='',
+            user_id=have_user.id
         )
         return create_response(data=user, message='success')
 
@@ -164,9 +157,6 @@ async def bind_group(item: GidItem, token: str = Header(None)):
         iv = item.iv
         session_key = user['session_key']
 
-        print('encrypted_data', encrypted_data)
-        print('iv', iv)
-        print('session_key', session_key)
         try:
             group_info = decrypt_data(encrypted_data=encrypted_data, session_key=session_key, iv=iv)
         except Exception as e:
@@ -194,35 +184,22 @@ async def create_user(item: UserItem):
     openid = item.openid
     session_key = item.session_key
 
-    token_data = get_token_data(openid=openid, session_key=session_key)
-    token = token_data['token']
-    have_user = await UserTable.check_user(openid=openid)
-    user_data = {
-        "token": token
-    }
-    if not have_user:
-        user = await UserTable.create_user(openid=openid, token=token)
-        print('创建用户成功')
-    else:
-        user = await UserTable.update_token(openid=openid, token=token)
-        print('更新用户成功')
 
-    user_data.update({"id": user.id})
-
-    # 验证用户是否存在
-    # 这里主要是解决用户信息更新问题，有可能存储的token是错误的，但是仍然走有token的登录，这时候要更新
     have_user = await UserTable.check_user(openid=openid)
 
     if not have_user:
-        await UserTable.create_user(openid=openid, token=token)
-    else:
-        # await UserTable.update_token(openid=openid, token=token)
-        user = await UserTable.update_user(
-            openid=openid,
-            token=token,
-            nickname=item.nickname,
-            avatar=item.avatar,
-        )
+        user = await UserTable.create_user(openid=openid)
+
+
+    have_user = await UserTable.check_user(openid=openid)
+
+
+    user = await UserTable.update_user(
+        user_id=have_user.id,
+        nickname=item.nickname,
+        avatar=item.avatar,
+    )
+
     return create_response(data=user, message='success')
 
 
@@ -242,6 +219,35 @@ async def ws_otp(token: str = Header(None)):
     encryptedOtp = cipher.encrypt(otp)
     encryptedOtp = base64.b64encode(encryptedOtp).decode('utf-8')
     return create_response(ret=0, data={"key": encryptedOtp}, message='获取 otp 成功')
+
+@router.get(users.get_all.value)
+async def get_all_user():
+    """
+    获取所有用户
+    """
+    users = await UserTable.all()
+    return create_response(data=users, message='success')
+
+@router.get(users.switch.value)
+async def switch_user(user_id:int  = Query(..., gt=0, description="用户ID")):
+    """
+    切换用户,测试用，非正经接口
+    """
+    try:
+        user = await UserTable.get(id=user_id)
+        if not user:
+             return create_response(ret=1001, message='用户不存在')
+    except Exception as e:
+        logger.error(e)
+        return create_response(ret=1001, message='用户不存在')
+
+    token_data = get_token_data(user_id=user.id,session_key='')
+    # token = token_data['token']
+    # user_data = {
+    #     "token": token
+    # }
+    # user_data.update({"id": user.get("id")})
+    return create_response(data=token_data, message='success')
 
 
 @router.get('/')

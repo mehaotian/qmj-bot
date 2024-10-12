@@ -111,7 +111,6 @@ def create_signature(endpoint):
     result["nonce"] = nonce
     return result
 
-
 # 根据加密算法生成hkey
 def generate_hkey(endpoint, timestamp, nonce):
     return generate_code(endpoint, timestamp + 1, nonce)

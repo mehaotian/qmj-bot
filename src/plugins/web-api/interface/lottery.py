@@ -32,9 +32,9 @@ async def get_current_user(token: str = Header(None)):
     if not token:
         raise HTTPException(status_code=400, detail="用户未登录")
     user = get_user_data(token)
-    if not user or 'openid' not in user:
+    if not user or 'user_id' not in user:
         raise HTTPException(status_code=401, detail="用户未登录，或登录过期")
-    user_data = await UserTable.check_user(openid=user['openid'])
+    user_data = await UserTable.get(id=user['user_id'])
     if not user_data:
         raise HTTPException(status_code=404, detail="用户不存在")
     return user_data
@@ -643,8 +643,8 @@ async def lottery_edit_write_off_status(item: WriteOffItem, token: str = Header(
         if not user:
             return create_response(ret=1003, message='无效的用户 Token')
 
-        openid = user.get('openid')
-        user_data = await UserTable.check_user(openid=openid)
+        user_id = user.get('user_id')
+        user_data = await UserTable.get(id=user_id)
         if not user_data:
             return create_response(ret=1004, message='用户不存在')
 
@@ -706,11 +706,11 @@ async def lottery_winner_list(item: WinnerItem, token: str = Header(None)):
             return create_response(ret=1002, message='用户Token不存在')
 
         user = get_user_data(token)
-        if not user or 'openid' not in user:
+        if not user or 'user_id' not in user:
             return create_response(ret=1003, message='无效的用户Token')
 
-        openid = user['openid']
-        user_data = await UserTable.check_user(openid=openid)
+        user_id = user['user_id']
+        user_data = await UserTable.get(id=user_id)
         if not user_data:
             return create_response(ret=1004, message='用户不存在')
 

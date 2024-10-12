@@ -19,7 +19,13 @@ class users(Enum):
     create: str = f"{api}/create"
     # websocket OTP
     ws_otp: str = f"{api}/ws_otp"
+    # 退出登录
     logout: str = f"{api}/logout"
+    # 获取所有用户
+    get_all: str = f"{api}/all"
+    # 切换登录用户
+    switch: str = f"{api}/switch"
+
 
 
 class lottery(Enum):
@@ -68,6 +74,8 @@ class team(Enum):
     get_list = f"{api}/list"
     # 获取团队详情
     get_detail = f"{api}/detail"
+    # 加入团队
+    join = f"{api}/join"
 
 
 class upload(Enum):

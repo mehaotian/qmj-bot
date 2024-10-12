@@ -30,7 +30,10 @@ def init_models():
     add_model("src.models.write_off_model")
 
     # --- 组队 ---
+    # 添加团队模型
     add_model("src.models.team_model")
+    # 添加团队成员模型
+    add_model("src.models.team_members_model")
 
     # --- 管理员 ---
     # 添加管理员用户模型

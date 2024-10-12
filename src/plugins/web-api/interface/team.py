@@ -1,10 +1,12 @@
 from datetime import datetime
+from enum import IntEnum
 from typing import List, Optional
 from nonebot import require
 from nonebot.log import logger
 from fastapi import APIRouter, Depends, HTTPException, Header, Query
 
 from src.models.team_model import TeamTable
+from src.models.team_members_model import TeamMembersTable
 from src.models.user_model import UserTable
 from pydantic import BaseModel, Field
 
@@ -26,34 +28,55 @@ async def get_current_user(token: str = Header(None)):
     if not token:
         raise HTTPException(status_code=400, detail="用户未登录")
     user = get_user_data(token)
-    if not user or 'openid' not in user:
+    if not user or 'user_id' not in user:
         raise HTTPException(status_code=400, detail="用户未登录，或登录过期")
-    user_data = await UserTable.check_user(openid=user['openid'])
+    user_data = await UserTable.get(id=user['user_id'])
     if not user_data:
         raise HTTPException(status_code=404, detail="用户不存在")
     return user_data
+
+
+class TimeLimitType(IntEnum):
+    """
+    组队时限枚举表
+    """
+    short = 1  # 短期
+    long = 2  # 长期
+
+
+class NatureType(IntEnum):
+    """
+    组队性质枚举表
+    """
+    game = 1  # 游戏
+    building = 2  # 团建
+    activity = 3  # 活动
 
 
 class AddTeamItem(BaseModel):
     name: str = Field(..., title="团队名称")
     current_num: int = Field(..., title="当前队伍人数")
     need_num: int = Field(..., title="需要等位多少人")
-    time_limit: str = Field(..., title="组队时限")
-    nature: str = Field(..., title="组队性质")
-    team_info: str = Field(..., title="组队要求")
+    time_limit: TimeLimitType = Field(..., title="组队时限")
+    nature: NatureType = Field(..., title="组队性质")
+    team_info: List[str] = Field(..., title="组队要求")
     start_time: str = Field(..., title="开始时间")
     end_time: str = Field(..., title="结束时间")
     desc: Optional[str] = Field(..., title="组队描述")
-    desc_img:  List[str] = Field(..., title="描述图片")
+    desc_img: List[str] = Field(..., title="描述图片")
 
 
 @router.post(team.add.value)
 async def add_team(item: AddTeamItem, current_user: UserTable = Depends(get_current_user)):
     """
     创建团队
+    参数：
+    - item: 团队信息
+    - token: 用户授权信息
+    返回:
+    - 成功：返回组队创建成功个信息
+    - 失败：返回错误信息
     """
-    if current_user.id != item.user_id:
-        return create_response(ret=1004, message='用户信息不匹配')
 
     # 组队名称 限制 3-12 字符
     if len(item.name) < 3 or len(item.name) > 12:
@@ -76,29 +99,163 @@ async def add_team(item: AddTeamItem, current_user: UserTable = Depends(get_curr
         return create_response(ret=1004, message='组队描述图片最多上传 9 张')
 
     # 开始时间需要大于当前时间
-    start_time = datetime.strptime(item.start_time, "%Y-%m-%d %H:%M")
+    start_time = datetime.strptime(item.start_time, "%Y-%m-%d %H:%M:%S")
     if start_time < datetime.now():
         return create_response(ret=1004, message='开始时间需要大于当前时间')
 
     # 结束时间大于开始时间
     if item.end_time:
-        end_time = datetime.strptime(item.end_time, "%Y-%m-%d %H:%M")
+        end_time = datetime.strptime(item.end_time, "%Y-%m-%d %H:%M:%S")
         if end_time < start_time:
             return create_response(ret=1004, message='结束时间需要大于开始时间')
 
-    options = {
-        "name": item.name,
-        "current_num": item.current_num,
-        "need_num": item.need_num,
-        "time_limit": item.time_limit,
-        "nature": item.nature,
-        "team_info": item.team_info,
-        "start_time": item.start_time,
-        "end_time": item.end_time,
-        "desc": item.desc,
-        "desc_img": item.desc_img,
+    try:
+        options = {
+            "user_id": current_user.id,
+            "name": item.name,
+            "current_num": item.current_num,
+            "need_num": item.need_num,
+            "time_limit": item.time_limit,
+            "nature": item.nature,
+            "team_info": item.team_info,
+            "start_time": item.start_time,
+            "end_time": item.end_time,
+            "desc": item.desc,
+            "desc_img": item.desc_img,
+        }
+
+        teamdata = await TeamTable.create_team(options)
+
+        return create_response(ret=0, data={
+            "team_id": teamdata.id,
+            "user_id": teamdata.user_id,
+            "user_name": current_user.nickname,
+            "team_name": teamdata.name
+        }, message='创建成功')
+    except Exception as e:
+        logger.error(e)
+        return create_response(ret=1001, message='创建组队失败')
+
+
+@router.get(team.get_list.value)
+async def get_team_list(
+        page: int = Query(1, ge=1, description="页码，默认为1"),
+        limit: int = Query(10, ge=1, le=100, description="每页数量，默认为10，最大100"),
+        status: Optional[int] = Query(0, ge=0, le=2, description="抽奖状态：0-全部，1-进行中，2-已结束")
+):
+    """
+    获取组队列表
+
+    参数:
+    - page: 页码，从1开始
+    - limit: 每页显示的数量，1-100之间
+    - status: 抽奖状态筛选，0表示全部，1表示进行中，2表示已结束
+
+    返回:
+    - 成功：返回分页后的抽奖列表数据
+    - 失败：返回错误信息
+    """
+    try:
+        list_data = await TeamTable.get_team_list(page=page, limit=limit, status=status if status != 0 else None)
+
+        if not list_data['items']:
+            return create_response(ret=0, data=[], message='暂无组队数据')
+
+        return create_page_response(
+            ret=0,
+            data=list_data['items'],
+            total=list_data['total'],
+            page=page,
+            limit=limit,
+            message='获取组队列表成功'
+        )
+
+    except ValueError as ve:
+        logger.warning(f'获取组队列表参数错误：{ve}')
+        return create_response(ret=1002, message=f'参数错误：{str(ve)}')
+    except Exception as e:
+        logger.error(f'获取组队列表失败：{e}')
+        return create_response(ret=1001, message='获取组队列表失败，请稍后重试')
+
+
+@router.get(team.get_detail.value)
+async def lottery_detail(team_id: int = Query(..., gt=0, description="组队ID")):
+    """
+    获取抽奖详情
+
+    参数:
+    - lottery_id: 抽奖ID，必须大于0
+
+    返回:
+    - 成功：返回抽奖详情数据
+    - 失败：返回错误信息
+    """
+    try:
+        team_data = await TeamTable.get_detail(team_id=team_id)
+        if not team_data:
+            return create_response(ret=1004, message='抽奖不存在')
+
+        return create_response(ret=0, data=team_data, message='获取抽奖详情成功')
+
+    except ValueError as ve:
+        logger.warning(f'获取抽奖详情参数错误：{ve}')
+        return create_response(ret=1002, message=f'参数错误：{str(ve)}')
+    except Exception as e:
+        logger.error(f'获取抽奖详情失败：{e}')
+        return create_response(ret=1001, message='获取抽奖详情失败，请稍后重试')
+
+
+class JoinItem(BaseModel):
+    team_id: int = Field(..., gt=0, description="组队ID")
+
+
+@router.post(team.join.value)
+async def join_team(team: JoinItem, current_user: UserTable = Depends(get_current_user)):
+    """
+    参与组队
+
+    方式: POST
+
+    参数:
+    - team_id: 组队ID
+
+    请求头
+    - token: 用户授权信息
+
+    返回:
+    - 成功：返回参与成功信息
+    - 失败：返回错误信息
+    """
+    # try:
+    team_id = team.team_id
+    user_id = current_user.id
+    team_data = await TeamTable.get(id=team_id)
+    if not team_data:
+        return create_response(ret=1004, message='组队不存在')
+
+    # 检查用户是否已经参与组队
+    check_join = await TeamMembersTable.check_join(team_id=team_id, user_id=user_id)
+    if check_join and check_join.status == 1:
+        return create_response(ret=1004, message='您已参与当前组队')
+
+    # 检查组队是否已满
+    # 获取当前已加入人数
+    team_members_count = await TeamMembersTable.get_join_count(team_id=team_id)
+    # 已存在人数
+
+    if team_members_count >= team_data.need_num:
+        return create_response(ret=1004, message='组队已满员')
+
+    # 创建参与组队
+    join_data = {
+        "team_id": team_id,
+        "user_id": user_id,
     }
+    await TeamMembersTable.user_join(join_data)
 
-    await TeamTable.create_team(options)
+    return create_response(ret=0, message='参与组队成功')
 
-    return create_response(ret=0, data='', message='创建成功')
+    #
+    # except Exception as e:
+    #     logger.error(e)
+    #     return create_response(ret=1001, message='参与组队失败')

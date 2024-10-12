@@ -7,14 +7,14 @@ import json
 from Crypto.Util.Padding import unpad
 
 
-def check_signature(rawData, session_key, signature):
+def check_signature(rawData, session_key:str, signature):
     """
     验证签名
     """
     if not rawData:
         return True
     # 使用相同的算法计算出签名
-    hash_string = rawData + session_key
+    hash_string = rawData + str(session_key)
     hash_object = hashlib.sha1(hash_string.encode())
     signature2 = hash_object.hexdigest()
     print('signature2', signature2)
@@ -51,6 +51,7 @@ def decrypt_data(encrypted_data='', session_key='', iv=''):
             raise
 
         decrypted = json.loads(decrypted_str)
+        print("+",decrypted)
         return decrypted
     except UnicodeDecodeError as e:
         # 记录解码错误日志

@@ -15,12 +15,12 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 300
 access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
 
-def get_token_data(openid: str, session_key: str):
+def get_token_data( user_id: str='',session_key:str=''):
     """
     获取用户数据
     """
     access_token: str = create_access_token(
-        data={"openid": openid},
+        data={"user_id": str(user_id)},
         expires_delta=access_token_expires,
         session_key=session_key
     )
@@ -49,7 +49,6 @@ def create_access_token(data: dict, expires_delta: Union[timedelta, None] = None
     参数:
         - data: 数据
         - expires_delta: 过期时间
-        - openid: 用户唯一标识
     """
     to_encode = data.copy()
     if expires_delta:
