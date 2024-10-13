@@ -54,28 +54,22 @@ class TeamMembersTable(Model):
         @param team_id 组队ID
         """
         try:
-            total_count = await cls.filter(team_id=team_id).count()
+            total_count = await cls.filter(team_id=team_id, status=1).count()
 
-            items = await cls.filter(team_id=team_id).order_by('-create_time')
-
-            user_ids: list[Any] = [item.user_id for item in items]
-
-            users: dict[int, dict[str, Any]] = await UserTable.get_users_by_ids(user_ids)
+            team_data = await cls.filter(team_id=team_id, status=1).order_by('-create_time').prefetch_related('user')
 
             result = []
-            for item in items:
+            for item in team_data:
                 item_dict = {k: v for k, v in item.__dict__.items()
                              if not k.startswith('_')}
                 item_dict['create_time'] = item_dict['create_time'].strftime('%Y-%m-%d %H:%M:%S')
                 item_dict['update_time'] = item_dict['update_time'].strftime('%Y-%m-%d %H:%M:%S')
 
-                user = users.get(item.user_id, {})
-                user_dict = {
-                    "id": user.id,
-                    "nickname": user.nickname,
-                    "avatar": user.avatar,
-                }
-                item_dict['user'] = user_dict
+                # user = users.get(item.user_id, {})
+                user = item.user
+                item_dict['nickname'] = user.nickname
+                item_dict['avatar'] = user.avatar
+
                 result.append(item_dict)
             return {"total": total_count, "items": result}
         except Exception as e:
@@ -88,4 +82,4 @@ class TeamMembersTable(Model):
         获取参与抽奖人数
         """
 
-        return await cls.filter(team_id=team_id,status=1).count()
+        return await cls.filter(team_id=team_id, status=1).count()

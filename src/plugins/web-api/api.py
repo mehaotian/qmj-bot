@@ -76,6 +76,12 @@ class team(Enum):
     get_detail = f"{api}/detail"
     # 加入团队
     join = f"{api}/join"
+    # 离开团队
+    leave = f"{api}/leave"
+    # 结束组队
+    end = f"{api}/end"
+    # 获取加入组队用户
+    get_user = f"{api}/get_user"
 
 
 class upload(Enum):

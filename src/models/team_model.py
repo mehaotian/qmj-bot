@@ -9,7 +9,7 @@ from tortoise.models import Model
 from typing import Dict, List, Optional
 from datetime import datetime
 
-from src.models.user_model import UserTable
+from src.models.team_members_model import TeamMembersTable
 from nonebot import get_driver, logger
 
 config = get_driver().config
@@ -43,7 +43,7 @@ class TeamTable(Model):
     desc = fields.CharField(max_length=255, default="")
     # 描述图片 例子 ['lottery/1.jpg', 'https://lottery/2.jpg']
     desc_img = fields.JSONField(default=[])
-    # 组队状态 1: 进行中 2:已结束
+    # 组队状态 1: 进行中 2:未开始 3:已结束
     status = fields.IntField(default=1)
 
     # 创建时间
@@ -64,6 +64,34 @@ class TeamTable(Model):
         @return: 格式化后的字符串，如果输入为None则返回None
         """
         return dt.strftime('%Y-%m-%d %H:%M:%S') if dt else None
+
+    @staticmethod
+    def format_image_url(img: str) -> str:
+        """
+        格式化图片URL
+
+        @param img: 图片路径或URL
+        @return: 完整的图片URL
+        """
+        return imgurl + '/' + img if not img.startswith('http') else img
+
+    @classmethod
+    def process_lottery_dict(cls, lottery_dict: Dict) -> Dict:
+        """
+        处理抽奖字典数据
+
+        @param lottery_dict: 原始抽奖数据字典
+        @return: 处理后的抽奖数据字典
+        """
+        lottery_dict['create_time'] = cls.format_datetime(lottery_dict.get('create_time'))
+        lottery_dict['start_time'] = cls.format_datetime(lottery_dict.get('start_time'))
+        lottery_dict['end_time'] = cls.format_datetime(lottery_dict.get('end_time'))
+        lottery_dict['update_time'] = cls.format_datetime(lottery_dict.get('update_time'))
+
+        desc_img = lottery_dict.get('desc_img', [])
+        lottery_dict['desc_img'] = [cls.format_image_url(img) for img in desc_img]
+
+        return lottery_dict
 
     @classmethod
     async def check_team(cls, team_id: str = ''):
@@ -104,7 +132,7 @@ class TeamTable(Model):
         try:
             query = cls.all().prefetch_related('user')
             if status is not None:
-                if status in [1, 2]:
+                if status in [1, 2, 3]:
                     query = query.filter(status=status)
                 else:
                     logger.warning(f"无效的状态值: {status}，将返回空列表")
@@ -125,6 +153,8 @@ class TeamTable(Model):
                 将发布者详细信息插入到组队信息中
                 """
                 item_dict = {k: v for k, v in item.__dict__.items() if not k.startswith('_')}
+                members_data = await TeamMembersTable.filter(team_id=item.id, status=1).prefetch_related('user')
+
                 # 获取关联用户
                 user = item.user
                 item_dict['user'] = {
@@ -132,6 +162,29 @@ class TeamTable(Model):
                     "nickname": user.nickname if user else None,
                     "avatar": user.avatar if user else None,
                 }
+                current_num = item.current_num - 1
+                members = [item_dict['user']]
+
+                # # 参与人补空
+                # for i in range(current_num):
+                #     members.append({
+                #         "id": 0,
+                #         "nickname": "",
+                #         "avatar": "",
+                #     })
+
+                for member in members_data:
+                    user = member.user
+                    if user.id == item.user_id:
+                        continue
+                    members.append({
+                        "id": user.id,
+                        "nickname": user.nickname,
+                        "avatar": user.avatar,
+                    })
+
+                # 参与人
+                item_dict['members'] = members
 
                 # 格式化时间
                 item_dict['start_time'] = cls.format_datetime(item.start_time)
@@ -164,12 +217,7 @@ class TeamTable(Model):
                 return None
 
             team_dict = {k: v for k, v in team_data.__dict__.items() if not k.startswith('_')}
-
-            # 格式化时间
-            team_dict['start_time'] = cls.format_datetime(team_data.start_time)
-            team_dict['end_time'] = cls.format_datetime(team_data.end_time)
-            team_dict['create_time'] = cls.format_datetime(team_data.create_time)
-            team_dict['update_time'] = cls.format_datetime(team_data.update_time)
+            team_dict = cls.process_lottery_dict(team_dict)
 
             team_dict['user'] = {
                 "id": user.id,
