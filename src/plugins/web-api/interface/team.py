@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import IntEnum
 from typing import List, Optional
+from apscheduler.jobstores.base import JobLookupError
 
 from nonebot import require
 from nonebot.log import logger
@@ -13,6 +14,7 @@ from pydantic import BaseModel, Field
 
 from ..utils.responses import create_response, create_page_response
 from ..utils.security import get_user_data
+from ..utils.goeasy import goeasy_send_message
 
 from ..api import team
 
@@ -67,6 +69,31 @@ class AddTeamItem(BaseModel):
     desc_img: List[str] = Field(..., title="描述图片")
 
 
+async def s_team_start(team_id: int):
+    """
+    开始组队
+    @param id:
+    @return:
+    """
+    table = await TeamTable.get(id=team_id)
+    table.status = 1
+    await table.save(update_fields=['status'])
+
+    goeasy_send_message('onTeamChange', 'start')
+
+
+async def s_team_end(team_id: int):
+    """
+    结束组队
+    @param id:
+    @return:
+    """
+    table = await TeamTable.get(id=team_id)
+    table.status = 3
+    await table.save(update_fields=['status'])
+    goeasy_send_message('onTeamChange', 'end')
+
+
 @router.post(team.add.value)
 async def add_team(item: AddTeamItem, current_user: UserTable = Depends(get_current_user)):
     """
@@ -98,18 +125,19 @@ async def add_team(item: AddTeamItem, current_user: UserTable = Depends(get_curr
     if len(item.desc_img) > 9:
         return create_response(ret=1004, message='组队描述图片最多上传 9 张')
 
-    team_status = 1
-
     # 开始时间需要大于当前时间
     start_time = datetime.strptime(item.start_time, "%Y-%m-%d %H:%M")
+    end_time = datetime.strptime(item.end_time, "%Y-%m-%d %H:%M")
+
     if start_time < datetime.now():
+        team_status = 1
+    else:
         team_status = 2
 
     # 结束时间大于开始时间
     if item.end_time:
-        end_time = datetime.strptime(item.end_time, "%Y-%m-%d %H:%M")
-        if end_time < start_time:
-            return create_response(ret=1004, message='结束时间需要大于开始时间')
+        if end_time < start_time and end_time < datetime.now():
+            return create_response(ret=1004, message='结束时间需要大于开始时间或当前时间')
 
     try:
         options = {
@@ -128,6 +156,26 @@ async def add_team(item: AddTeamItem, current_user: UserTable = Depends(get_curr
         }
 
         teamdata = await TeamTable.create_team(options)
+        print('id', teamdata.id)
+        if scheduler:
+
+            if team_status == 2:
+                # 如果当前时间大于的能与 开奖时间，直接开奖
+                scheduler.add_job(
+                    s_team_start,
+                    "date",  # 触发器类型，"date" 表示在指定的时间只执行一次
+                    run_date=start_time,  # 开奖时间
+                    args=[teamdata.id],  # 传递给 open_lottery 函数的参数
+                    id=f"team_start_{str(teamdata.id)}",  # 任务 ID，需要确保每个任务的 ID 是唯一的
+                )
+                print('----- 组队开始定时任务添加成功')
+            scheduler.add_job(
+                s_team_end,
+                "date",  # 触发器类型，"date" 表示在指定的时间只执行一次
+                run_date=end_time,  # 开奖时间
+                args=[teamdata.id],  # 传递给 open_lottery 函数的参数
+                id=f"team_end_{str(teamdata.id)}",  # 任务 ID，需要确保每个任务的 ID 是唯一的
+            )
 
         return create_response(ret=0, data={
             "team_id": teamdata.id,
@@ -231,7 +279,6 @@ async def lottery_my_list(
         return create_response(ret=1001, message='获取用户组队列表失败，请稍后重试')
 
 
-
 @router.get(team.get_detail.value)
 async def team_detail(team_id: int = Query(..., gt=0, description="组队ID")):
     """
@@ -286,6 +333,10 @@ async def join_team(team: JoinItem, current_user: UserTable = Depends(get_curren
         team_data = await TeamTable.get(id=team_id)
         if not team_data:
             return create_response(ret=1004, message='组队不存在')
+
+        # 检查组队状态
+        if team_data.status == 3:
+            return create_response(ret=1004, message='组队已结束')
 
         # 检查用户是否已经参与组队
         check_join = await TeamMembersTable.check_join(team_id=team_id, user_id=user_id)
@@ -353,6 +404,7 @@ async def leave_team(team: JoinItem, current_user: UserTable = Depends(get_curre
         logger.error(e)
         return create_response(ret=1001, message='离开组队失败')
 
+
 @router.post(team.end.value)
 async def close_team(team: JoinItem, current_user: UserTable = Depends(get_current_user)):
     """
@@ -389,6 +441,7 @@ async def close_team(team: JoinItem, current_user: UserTable = Depends(get_curre
     except Exception as e:
         logger.error(e)
         return create_response(ret=1001, message='关闭组队失败')
+
 
 @router.get(team.get_user.value)
 async def get_team_user(team_id: int = Query(..., gt=0, description="组队ID")):
