@@ -82,6 +82,8 @@ class team(Enum):
     end = f"{api}/end"
     # 获取加入组队用户
     get_user = f"{api}/get_user"
+    # 获取我的组队
+    get_my_list = f"{api}/my_list"
 
 
 class upload(Enum):

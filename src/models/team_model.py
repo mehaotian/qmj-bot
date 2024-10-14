@@ -146,7 +146,7 @@ class TeamTable(Model):
             total_count = await query.count()
 
             items = await query.order_by('-create_time').limit(limit).offset((page - 1) * limit)
-
+            print('items',items)
             result = []
             for item in items:
                 """
@@ -162,8 +162,9 @@ class TeamTable(Model):
                     "nickname": user.nickname if user else None,
                     "avatar": user.avatar if user else None,
                 }
-                current_num = item.current_num - 1
-                members = [item_dict['user']]
+                # current_num = item.current_num - 1
+                # members = [item_dict['user']]
+                members = []
 
                 # # 参与人补空
                 # for i in range(current_num):
