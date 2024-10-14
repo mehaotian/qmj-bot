@@ -56,7 +56,7 @@ class TeamMembersTable(Model):
         try:
             total_count = await cls.filter(team_id=team_id, status=1).count()
 
-            team_data = await cls.filter(team_id=team_id, status=1).order_by('-create_time').prefetch_related('user')
+            team_data = await cls.filter(team_id=team_id, status=1).order_by('create_time').prefetch_related('user')
 
             result = []
             for item in team_data:
