@@ -123,12 +123,12 @@ async def logout(token: str = Header(None)):
     if not token:
         return create_response(ret=1002, message='用户未登录')
     user = get_user_data(token)
-    openid = user.get('openid')
+    user_id = user.get('user_id')
     # 验证用户是否存在
-    have_user = await UserTable.check_user(openid=openid)
+    have_user = await UserTable.get(id=user_id)
 
     if not have_user:
-        return create_response(ret=1001, message='用户不存在')
+        return create_response(ret=0, message='用户不存在')
     else:
         user = await UserTable.update_user(
             user_id=have_user.id
