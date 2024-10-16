@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link href="{{ url_for('static', path='/styles.css') }}" rel="stylesheet">
+</head>
+<body>
+<div>
+    <!--数据循环 -->
+    {% for item in data %}
+    <div class="item">
+        <h3>
+            {{item.name}}
+            <!-- 如果 name_cn 存在则渲染 -->
+            {% if item.name_en %}
+            <span>({{item.name_en}})</span>
+            {% endif %}
+        </h3>
+        <div>
+            <img class="img" src="{{item.image}}" alt="{{item.name}}">
+            <img class="img none" src="{{item.libary_background}}" alt="">
+            <button class="btn">切换图片</button>
+        </div>
+        <!--        评分: 9.8(95%)-->
+        <!--        平台: steam-->
+        <!--        类型: 动作/冒险/类魂系列/困难/单人/忍者-->
+        <!--        发布日期: 2019年03月22日-->
+        <!--        发行商: 方块游戏 (CubeGame)-->
+        <!--        开发商: FromSoftware, Inc.-->
+        <!--        Metacritic评分: 88-->
+        <!--        奖项: Steam大奖2019 - 年度最佳游戏/TGA 2019 - 年度最佳游戏/TGA 2019 - 最佳动作冒险游戏-->
+        <!--        印象评分: 故事剧情: 9.4/视觉画面: 9.5/音乐音效: 9.5/玩法机制: 9.7/优化适配: 9.3-->
+        <!--        原价: 268元-->
+        <!--        当前价: 268元-->
+        <!--        券后价格: 0元-->
+        <!--        折扣: 52%-->
+        <!--        史低价格: 134元-->
+        <!--        是否史低: 否-->
+        <!--        是否新史低: 否-->
+        <p>
+            <b>评分：</b>{{item.score}}
+            {% if item.steam_score %}
+            <span>({{item.steam_score}})</span>
+            {% endif %}
+        </p>
+        <p><b>平台：</b>{{item.platform}}</p>
+        {% if item.region_name %}
+        <p><b>地区：</b>
+            {{item.region_name}}
+        </p>
+        {% endif %}
+
+        {% if item.tags %}
+        <p><b>类型：</b>
+            {% for tag in item.tags %}
+            {% if not loop.first %}/{% endif %} {{tag}}
+            {% endfor %}
+        </p>
+        {% endif %}
+        <p><b>发布日期：</b>{{item.release_date}}</p>
+        <p><b>发行商：</b>{{item.publisher}}</p>
+        <p><b>开发商：</b>{{item.developer}}</p>
+        <p><b>Metacritic评分：</b>{{item.mscore}}</p>
+        {% if item.game_award %}
+        <p><b>奖项：</b>
+            {% for award in item.game_award %}
+            {% if not loop.first %}/{% endif %} {{award.desc}} - {{award.detail_name}}
+            {% endfor %}
+        </p>
+        {% endif %}
+        {% if item.dimension_list %}
+        <p><b>印象评分：</b>
+            {% for dimension in item.dimension_list %}
+            {% if not loop.first %}/{% endif %} {{dimension.dimension_name}}：{{dimension.score}}
+            {% endfor %}
+        </p>
+        {% endif %}
+        <p><b>原价：</b>{{item.initial}}</p>
+        <p><b>当前价：</b>{{item.current}}</p>
+        <p><b>券后价格：</b>{{item.cost_coin}}</p>
+        <p><b>折扣：</b>{{item.discount}}</p>
+        <p><b>史低价格：</b>{{item.lowest_price}}</p>
+        <p><b>是否史低：</b>{{"是" if item.is_lowest else "否"}}</p>
+        <p><b>是否新史低：</b>{{"是" if item.is_new_lowest else "否"}}</p>
+
+
+    </div>
+    {% endfor %}
+</div>
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="{{ url_for('static', path='/script.js') }}"></script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 import requests
 import json
 from urllib.parse import urlencode
-from auth import XhhAuth
+from .auth import XhhAuth
 
 # 其他必需的配置项，不了解的话请勿乱改
 s_request = requests.session()
@@ -44,8 +44,8 @@ class Xhh():
         except Exception:
             content = s_request.get(url, headers=headers, cookies=cookie, proxies=proxies, timeout=4)
         return content
-
-    def dict_to_query_string(self, params: dict, text_url: str) -> str:
+    @classmethod
+    def dict_to_query_string(cls,params: dict, text_url: str) -> str:
         """
         将字典转换为 URL 查询参数格式
         :param params: 要转换的字典
@@ -53,7 +53,6 @@ class Xhh():
         """
 
         obj = XhhAuth.create_sign(text_url)
-        print(obj)
         baseQuery = {
             "client_type": "heybox_chat",
             "x_client_type": "web",
@@ -80,18 +79,17 @@ class Xhh():
         query_string = urlencode(params)
         return f"?{query_string}"
 
-    def get_url(cls, text: str, data: dict):
+    def get_url(self, text: str, data: dict):
         """
         获取请求地址
         @param text:
         @return:
         """
-        # print(cls.search_text)
-        query_string = cls.dict_to_query_string(data, text)
-        return f'{cls.url}{text}{query_string}'
+        query_string = self.dict_to_query_string(data, text)
+        return f'{self.url}{text}{query_string}'
 
     @classmethod
-    def search(cls, keyword: str):
+    def search(cls, q: str):
         """
         搜索
         @param q:
@@ -99,7 +97,7 @@ class Xhh():
         """
         interface = cls()
         url = cls.get_url(cls, cls.search_text, {
-            "q": keyword,
+            "q": q,
             "search_type": "game",
             "game_type": "pc",
             "limit": 20,
@@ -117,12 +115,7 @@ class Xhh():
         url = interface.get_url(cls.game_detail_text, {
             "steam_appid": steam_appid,
         })
-        print(url)
         json_page = json.loads(interface.request(url, headers=header).text)
 
         return json_page
 
-
-# 814380
-
-print(Xhh.game_detail('814380'))

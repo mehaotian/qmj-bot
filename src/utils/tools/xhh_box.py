@@ -236,6 +236,3 @@ def search_game(q:str):
 
     return json_page
 
-
-
-print(get_game_detail())

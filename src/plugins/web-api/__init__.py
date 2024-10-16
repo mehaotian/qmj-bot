@@ -13,7 +13,7 @@ from starlette.middleware.cors import CORSMiddleware
 require('nonebot_plugin_apscheduler')
 from nonebot_plugin_apscheduler import scheduler
 from .utils.responses import create_response
-
+from fastapi.staticfiles import StaticFiles
 from .interface import (
     auth,
     user,
@@ -38,6 +38,8 @@ app.add_middleware(
     allow_headers=["*"],  # 允许所有头
 )
 
+# 挂在静态目录
+app.mount("/static", StaticFiles(directory="./src/plugins/web-api/static"), name="static")
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
