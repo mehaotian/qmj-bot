@@ -103,12 +103,14 @@ def generate_md5(input_string):
 def create_signature(endpoint):
     result = {}
     current_time = int(time.time())
+    print('current_time', current_time)
     random_seed = str(current_time) + str(random.random())[:18]
 
     nonce = generate_md5(random_seed).upper()
     result['hkey'] = generate_hkey(endpoint, current_time, nonce)
     result["_time"] = current_time
     result["nonce"] = nonce
+    print(result)
     return result
 
 # 根据加密算法生成hkey
@@ -156,7 +158,8 @@ text = "/bbs/web/profile/post/links"
 detial_text = "/bbs/app/api/share/data"
 list_text = '/game/get_game_list_v3'
 search_text = '/bbs/app/api/general/search/v1'
-
+# 游戏详情
+game_detail_text = '/game/get_game_detail'
 
 # https://api.xiaoheihe.cn/bbs/web/profile/post/links?os_type=web&version=999.0.3&x_app=heybox_website&x_client_type=web&heybox_id=43580550&x_os_type=Mac&hkey=FDC9386&_time=1718355163&nonce=8957D56ECF6C4DA42220161FBF925778&userid=1985029&limit=20&offset=0&post_type=2&list_type=article
 # https://api.xiaoheihe.cn/bbs/app/api/share/data/?os_type=web&app=heybox&client_type=mobile&version=999.0.3&x_client_type=web&x_os_type=Mac&x_client_version=&x_app=heybox&heybox_id=-1&offset=0&limit=3&link_id=125369222&use_concept_type=&hkey=C2N4Q78&_time=1718355967&nonce=28BCBB38D225EA790D352A9CC3E8932A
@@ -203,6 +206,11 @@ def search_url(keyword: str = ''):
     }, search_text)
     return f'{url}{search_text}{query_string}'
 
+def game_detial(steam_appid):
+    query_string = dict_to_query_string({
+        "steam_appid": steam_appid,
+    }, game_detail_text)
+    return f'{url}{game_detail_text}{query_string}'
 
 header = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36",
@@ -215,19 +223,19 @@ def get_article_list(page: int = 1, limit: int = 20):
     print('url ---', search_url('艾尔登'))
     pass
 
+def get_game_detail():
+    url = game_detial(730)
+    print(url)
+    json_page = json.loads(other_request(url, headers=header).text)
+
+    return json_page
 
 def search_game(q:str):
     url = search_url(q)
     json_page = json.loads(other_request(url, headers=header).text)
-    # result_list = json_page["post_links"]
-    # result = []
-    # for item in result_list:
-    #     gameinfo = {
-    #         "链接": item["share_url"],
-    #         "图片": item["thumbs"][0],
-    #         "标题": item["title"],
-    #     }
-    #     result.append(gameinfo)
 
     return json_page
 
+
+
+print(get_game_detail())
